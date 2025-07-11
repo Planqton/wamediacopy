@@ -294,14 +294,14 @@ class SettingsFragment : Fragment(),
         if (prefs.getLong(FileCopyWorker.PREF_LAST_COPY, 0L) == 0L) {
             prefs.edit().putBoolean(FileCopyWorker.PREF_REQUIRE_MANUAL_FIRST, true).apply()
         }
-        val period = if (minutes < 15) 15L else minutes.toLong()
+        val period = minutes.coerceAtLeast(15)
         val request = PeriodicWorkRequestBuilder<FileCopyWorker>(period, TimeUnit.MINUTES)
             .addTag(FileCopyWorker.TAG)
             .build()
         manager.enqueueUniquePeriodicWork(WORK_NAME, ExistingPeriodicWorkPolicy.UPDATE, request)
         val last = prefs.getLong(FileCopyWorker.PREF_LAST_COPY, 0L)
         val base = if (last > 0L) maxOf(System.currentTimeMillis(), last) else System.currentTimeMillis()
-        val next = base + minutes * 60_000L
+        val next = base + period * 60_000L
         prefs.edit()
             .putBoolean(FileCopyWorker.PREF_IS_RUNNING, false)
             .putLong(FileCopyWorker.PREF_PROCESSED, 0L)
@@ -322,7 +322,7 @@ class SettingsFragment : Fragment(),
 
         if (toggle.isChecked) {
             val minutes = prefs.getInt(FileCopyWorker.PREF_INTERVAL_MINUTES, 720)
-            val period = if (minutes < 15) 15L else minutes.toLong()
+            val period = minutes.coerceAtLeast(15)
             val requestPeriodic =
                 PeriodicWorkRequestBuilder<FileCopyWorker>(period, TimeUnit.MINUTES)
                     .addTag(FileCopyWorker.TAG)
@@ -334,7 +334,7 @@ class SettingsFragment : Fragment(),
             )
             val last = prefs.getLong(FileCopyWorker.PREF_LAST_COPY, 0L)
             val base = if (last > 0L) maxOf(System.currentTimeMillis(), last) else System.currentTimeMillis()
-            val next = base + minutes * 60_000L
+            val next = base + period * 60_000L
             prefs.edit().putLong(FileCopyWorker.PREF_NEXT_COPY, next).apply()
         }
         prefs.edit().putLong(FileCopyWorker.PREF_PROCESSED, 0L).apply()

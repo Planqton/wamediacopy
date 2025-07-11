@@ -81,7 +81,7 @@ class BlacklistFragment : Fragment() {
     private fun refresh(prefs: android.content.SharedPreferences) {
         listLayout.removeAllViews()
         for (uri in copied) {
-            val cb = CheckBox(requireContext()).apply { text = uri }
+            val cb = CheckBox(requireContext()).apply { text = Uri.decode(uri) }
             listLayout.addView(cb)
         }
         countText.text = "Count: ${copied.size}"

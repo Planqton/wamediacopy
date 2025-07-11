@@ -82,11 +82,12 @@ class FoldersFragment : Fragment(), SharedPreferences.OnSharedPreferenceChangeLi
             }
             val remove = Button(requireContext()).apply { text = "X" }
             remove.setOnClickListener {
-                Log.d(TAG, "remove source $uri")
+                val decoded = Uri.decode(uri)
+                Log.d(TAG, "remove source $decoded")
                 sources.remove(uri)
                 prefs.edit().putStringSet(FileCopyWorker.PREF_SOURCES, sources.toSet()).apply()
                 refreshSources(prefs)
-                AppLog.add(requireContext(), "Removed source $uri")
+                AppLog.add(requireContext(), "Removed source $decoded")
             }
             row.addView(tv)
             row.addView(remove)
@@ -106,15 +107,17 @@ class FoldersFragment : Fragment(), SharedPreferences.OnSharedPreferenceChangeLi
             )
             when (requestCode) {
                 REQ_PICK_SOURCE -> {
-                    sources.add(uri.toString())
+                    val uriStr = uri.toString()
+                    sources.add(uriStr)
                     prefs.edit().putStringSet(FileCopyWorker.PREF_SOURCES, sources.toSet()).apply()
                     refreshSources(prefs)
-                    AppLog.add(requireContext(), "Added source $uri")
+                    AppLog.add(requireContext(), "Added source ${Uri.decode(uriStr)}")
                 }
                 REQ_PICK_DEST -> {
-                    destEdit.setText(Uri.decode(uri.toString()))
-                    prefs.edit().putString(FileCopyWorker.PREF_DEST, uri.toString()).apply()
-                    AppLog.add(requireContext(), "Set destination $uri")
+                    val uriStr = uri.toString()
+                    destEdit.setText(Uri.decode(uriStr))
+                    prefs.edit().putString(FileCopyWorker.PREF_DEST, uriStr).apply()
+                    AppLog.add(requireContext(), "Set destination ${Uri.decode(uriStr)}")
                 }
             }
         }

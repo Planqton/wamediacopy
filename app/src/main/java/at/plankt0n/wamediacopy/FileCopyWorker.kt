@@ -194,8 +194,9 @@ class FileCopyWorker(
                     stop = true
                     break
                 }
-                Log.d(TAG, "Processing source $src")
-                AppLog.add(applicationContext, "Processing source $src")
+                val decoded = Uri.decode(src)
+                Log.d(TAG, "Processing source $decoded")
+                AppLog.add(applicationContext, "Processing source $decoded")
                 val sDir = DocumentFile.fromTreeUri(applicationContext, Uri.parse(src))
                 if (sDir != null && sDir.isDirectory) {
                     traverse(sDir)
@@ -221,7 +222,8 @@ class FileCopyWorker(
             AppLog.add(applicationContext, summary)
 
             if (intervalMin > 0) {
-                val nextScheduled = now + intervalMin * 60_000L
+                val periodMin = maxOf(intervalMin, 15)
+                val nextScheduled = now + periodMin * 60_000L
                 prefs.edit().putLong(PREF_NEXT_COPY, nextScheduled).apply()
             }
 
