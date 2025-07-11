@@ -247,7 +247,6 @@ class SettingsFragment : Fragment() {
             return
         }
         prefs.edit()
-            .putBoolean(FileCopyWorker.PREF_IS_RUNNING, true)
             .putBoolean(FileCopyWorker.PREF_REQUIRE_MANUAL_FIRST, false)
             .apply()
         val request = OneTimeWorkRequestBuilder<FileCopyWorker>()
