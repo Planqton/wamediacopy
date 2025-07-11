@@ -37,6 +37,7 @@ class SettingsFragment : Fragment() {
     private lateinit var toggle: Switch
     private lateinit var manual: Button
     private lateinit var stop: Button
+    private lateinit var lastCopyText: TextView
 
     private val manager by lazy { WorkManager.getInstance(requireContext()) }
     private val notifId = 1
@@ -81,6 +82,7 @@ class SettingsFragment : Fragment() {
         toggle = view.findViewById(R.id.switch_run)
         manual = view.findViewById(R.id.button_manual)
         stop = view.findViewById(R.id.button_stop)
+        lastCopyText = view.findViewById(R.id.text_last_copy)
 
         val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
         aliasEdit.setText(prefs.getString(FileCopyWorker.PREF_ALIAS, ""))
@@ -159,6 +161,30 @@ class SettingsFragment : Fragment() {
         })
 
         if (toggle.isChecked) scheduleWork() else cancelWork()
+
+        refreshLastCopy(prefs)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
+        refreshLastCopy(prefs)
+    }
+
+    private fun refreshLastCopy(prefs: android.content.SharedPreferences) {
+        val ts = prefs.getLong(FileCopyWorker.PREF_LAST_COPY, 0L)
+        val label = if (ts == 0L) {
+            "Last: never"
+        } else {
+            val fmt = android.text.format.DateFormat.format("yyyy-MM-dd HH:mm", ts)
+            "Last: $fmt"
+        }
+        lastCopyText.text = label
+        val running = prefs.getBoolean(FileCopyWorker.PREF_IS_RUNNING, false)
+        manual.isEnabled = !running
+        if (running) {
+            lastCopyText.text = "$label (running)"
+        }
     }
 
     private fun scheduleWork() {
@@ -172,8 +198,15 @@ class SettingsFragment : Fragment() {
 
     private fun scheduleOnce() {
         Log.d(TAG, "scheduleOnce")
+        val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
+        if (prefs.getBoolean(FileCopyWorker.PREF_IS_RUNNING, false)) {
+            AppLog.add(requireContext(), "Copy already running")
+            return
+        }
+        prefs.edit().putBoolean(FileCopyWorker.PREF_IS_RUNNING, true).apply()
         val request = OneTimeWorkRequestBuilder<FileCopyWorker>().build()
         manager.enqueue(request)
+        refreshLastCopy(prefs)
     }
 
     private fun cancelWork() {

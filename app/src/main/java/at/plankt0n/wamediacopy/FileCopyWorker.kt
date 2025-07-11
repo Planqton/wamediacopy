@@ -40,6 +40,11 @@ class FileCopyWorker(
         Log.d(TAG, "Worker started")
         AppLog.add(applicationContext, "Worker started")
         val prefs = PreferenceManager.getDefaultSharedPreferences(applicationContext)
+        if (prefs.getBoolean(PREF_IS_RUNNING, false)) {
+            Log.d(TAG, "Already running")
+            AppLog.add(applicationContext, "Copy already running")
+            return@withContext Result.success()
+        }
         val sources = prefs.getStringSet(PREF_SOURCES, emptySet()) ?: emptySet()
         val destUri = prefs.getString(PREF_DEST, null)
         val maxAgeHours = prefs.getInt(PREF_MAX_AGE_HOURS, 24)
@@ -58,8 +63,12 @@ class FileCopyWorker(
             AppLog.add(applicationContext, "No destination set")
             return@withContext Result.failure()
         }
+        prefs.edit().putBoolean(PREF_IS_RUNNING, true).apply()
         val destDir = DocumentFile.fromTreeUri(applicationContext, Uri.parse(destUri))
-            ?: return@withContext Result.failure()
+        if (destDir == null) {
+            prefs.edit().putBoolean(PREF_IS_RUNNING, false).apply()
+            return@withContext Result.failure()
+        }
 
         val cutoff = if (copyMode == 0) {
             System.currentTimeMillis() - maxAgeHours * 3600_000L
@@ -110,33 +119,37 @@ class FileCopyWorker(
             }
         }
 
-        for (src in sources) {
-            Log.d(TAG, "Processing source $src")
-            AppLog.add(applicationContext, "Processing source $src")
-            val sDir = DocumentFile.fromTreeUri(applicationContext, Uri.parse(src))
-            if (sDir != null && sDir.isDirectory) {
-                traverse(sDir)
+        try {
+            for (src in sources) {
+                Log.d(TAG, "Processing source $src")
+                AppLog.add(applicationContext, "Processing source $src")
+                val sDir = DocumentFile.fromTreeUri(applicationContext, Uri.parse(src))
+                if (sDir != null && sDir.isDirectory) {
+                    traverse(sDir)
+                }
             }
+
+            prefs.edit()
+                .putStringSet(PREF_COPIED, copied)
+                .putLong(PREF_LAST_COPY, System.currentTimeMillis())
+                .apply()
+
+            val summary = "Copied $newCount, old $oldSkipped, already $alreadySkipped"
+            val notif = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
+                .setSmallIcon(android.R.drawable.stat_sys_upload_done)
+                .setContentTitle("Copy finished")
+                .setContentText(summary)
+                .build()
+            NotificationManagerCompat.from(applicationContext).notify(2, notif)
+            AppLog.add(applicationContext, summary)
+            AppLog.add(applicationContext, "Waiting for next interval")
+
+            Log.d(TAG, "Worker finished")
+
+            return@withContext Result.success()
+        } finally {
+            prefs.edit().putBoolean(PREF_IS_RUNNING, false).apply()
         }
-
-        prefs.edit()
-            .putStringSet(PREF_COPIED, copied)
-            .putLong(PREF_LAST_COPY, System.currentTimeMillis())
-            .apply()
-
-        val summary = "Copied $newCount, old $oldSkipped, already $alreadySkipped"
-        val notif = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.stat_sys_upload_done)
-            .setContentTitle("Copy finished")
-            .setContentText(summary)
-            .build()
-        NotificationManagerCompat.from(applicationContext).notify(2, notif)
-        AppLog.add(applicationContext, summary)
-        AppLog.add(applicationContext, "Waiting for next interval")
-
-        Log.d(TAG, "Worker finished")
-
-        return@withContext Result.success()
     }
 
     companion object {
@@ -148,6 +161,7 @@ class FileCopyWorker(
         const val PREF_LAST_COPY = "lastCopy"
         const val PREF_COPY_MODE = "copyMode"
         const val PREF_INTERVAL_HOURS = "intervalH"
+        const val PREF_IS_RUNNING = "copyRunning"
         const val CHANNEL_ID = "copy_status"
         const val FOREGROUND_ID = 100
         const val TAG = "FileCopyWorker"
