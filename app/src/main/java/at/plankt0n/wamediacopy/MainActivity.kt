@@ -10,6 +10,7 @@ import androidx.core.content.ContextCompat
 
 import at.plankt0n.wamediacopy.FoldersFragment
 import at.plankt0n.wamediacopy.BlacklistFragment
+import at.plankt0n.wamediacopy.LogsFragment
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -24,6 +25,7 @@ class MainActivity : AppCompatActivity() {
                 R.id.nav_settings -> SettingsFragment()
                 R.id.nav_folders -> FoldersFragment()
                 R.id.nav_blacklist -> BlacklistFragment()
+                R.id.nav_logs -> LogsFragment()
                 else -> null
             }
             fragment?.let {

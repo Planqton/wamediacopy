@@ -13,6 +13,7 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import at.plankt0n.wamediacopy.AppLog
 
 class FoldersFragment : Fragment() {
 
@@ -58,6 +59,7 @@ class FoldersFragment : Fragment() {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: android.text.Editable?) {
                 prefs.edit().putString(FileCopyWorker.PREF_DEST, destEdit.text.toString()).apply()
+                AppLog.add(requireContext(), "Set destination ${destEdit.text}")
             }
         })
     }
@@ -86,6 +88,7 @@ class FoldersFragment : Fragment() {
                 sources.remove(uri)
                 prefs.edit().putStringSet(FileCopyWorker.PREF_SOURCES, sources.toSet()).apply()
                 refreshSources(prefs)
+                AppLog.add(requireContext(), "Removed source $uri")
             }
             row.addView(tv)
             row.addView(remove)
@@ -108,10 +111,12 @@ class FoldersFragment : Fragment() {
                     sources.add(uri.toString())
                     prefs.edit().putStringSet(FileCopyWorker.PREF_SOURCES, sources.toSet()).apply()
                     refreshSources(prefs)
+                    AppLog.add(requireContext(), "Added source $uri")
                 }
                 REQ_PICK_DEST -> {
                     destEdit.setText(uri.toString())
                     prefs.edit().putString(FileCopyWorker.PREF_DEST, uri.toString()).apply()
+                    AppLog.add(requireContext(), "Set destination $uri")
                 }
             }
         }

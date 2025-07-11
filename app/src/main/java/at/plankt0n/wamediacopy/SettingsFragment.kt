@@ -23,6 +23,7 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import at.plankt0n.wamediacopy.AppLog
 import java.util.concurrent.TimeUnit
 
 class SettingsFragment : Fragment() {
@@ -97,15 +98,23 @@ class SettingsFragment : Fragment() {
         toggle.setOnCheckedChangeListener { _, isChecked ->
             prefs.edit().putBoolean(PREF_ENABLED, isChecked).apply()
             Log.d(TAG, "toggle periodic $isChecked")
-            if (isChecked) scheduleWork() else cancelWork()
+            if (isChecked) {
+                AppLog.add(requireContext(), "Periodic copy enabled")
+                scheduleWork()
+            } else {
+                AppLog.add(requireContext(), "Periodic copy disabled")
+                cancelWork()
+            }
         }
 
         manual.setOnClickListener {
             Log.d(TAG, "manual copy pressed")
+            AppLog.add(requireContext(), "Manual copy requested")
             scheduleOnce()
         }
         stop.setOnClickListener {
             Log.d(TAG, "stop pressed")
+            AppLog.add(requireContext(), "Periodic copy stopped")
             cancelWork()
             toggle.isChecked = false
         }

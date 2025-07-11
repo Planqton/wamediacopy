@@ -12,6 +12,7 @@ import androidx.documentfile.provider.DocumentFile
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
+import at.plankt0n.wamediacopy.AppLog
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -37,6 +38,7 @@ class FileCopyWorker(
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         Log.d(TAG, "Worker started")
+        AppLog.add(applicationContext, "Worker started")
         val prefs = PreferenceManager.getDefaultSharedPreferences(applicationContext)
         val sources = prefs.getStringSet(PREF_SOURCES, emptySet()) ?: emptySet()
         val destUri = prefs.getString(PREF_DEST, null)
@@ -53,6 +55,7 @@ class FileCopyWorker(
 
         if (destUri.isNullOrBlank()) {
             Log.d(TAG, "No destination set")
+            AppLog.add(applicationContext, "No destination set")
             return@withContext Result.failure()
         }
         val destDir = DocumentFile.fromTreeUri(applicationContext, Uri.parse(destUri))
@@ -86,6 +89,7 @@ class FileCopyWorker(
                                         }
                                     }
                                     Log.d(TAG, "Copied ${doc.uri} -> ${target.uri}")
+                                    AppLog.add(applicationContext, "Copied ${doc.uri}")
                                     copied.add(key)
                                     newCount++
                                 }
@@ -94,10 +98,12 @@ class FileCopyWorker(
                             }
                         } else {
                             Log.d(TAG, "Already copied ${doc.uri}")
+                            AppLog.add(applicationContext, "Skipped existing ${doc.uri}")
                             alreadySkipped++
                         }
                     } else {
                         Log.d(TAG, "Too old ${doc.uri}")
+                        AppLog.add(applicationContext, "Skipped old ${doc.uri}")
                         oldSkipped++
                     }
                 }
@@ -106,6 +112,7 @@ class FileCopyWorker(
 
         for (src in sources) {
             Log.d(TAG, "Processing source $src")
+            AppLog.add(applicationContext, "Processing source $src")
             val sDir = DocumentFile.fromTreeUri(applicationContext, Uri.parse(src))
             if (sDir != null && sDir.isDirectory) {
                 traverse(sDir)
@@ -124,6 +131,8 @@ class FileCopyWorker(
             .setContentText(summary)
             .build()
         NotificationManagerCompat.from(applicationContext).notify(2, notif)
+        AppLog.add(applicationContext, summary)
+        AppLog.add(applicationContext, "Waiting for next interval")
 
         Log.d(TAG, "Worker finished")
 

@@ -11,4 +11,8 @@
         android:id="@+id/nav_blacklist"
         android:icon="@android:drawable/ic_menu_delete"
         android:title="Blacklist" />
+    <item
+        android:id="@+id/nav_logs"
+        android:icon="@android:drawable/ic_menu_info_details"
+        android:title="Logs" />
 </menu>
