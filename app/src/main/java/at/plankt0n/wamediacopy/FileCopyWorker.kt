@@ -151,22 +151,24 @@ class FileCopyWorker(
                 }
             }
 
+            val now = System.currentTimeMillis()
+            val next = if (intervalMin > 0) now + intervalMin * 60_000L else 0L
             prefs.edit()
                 .putStringSet(PREF_COPIED, copied)
-                .putLong(PREF_LAST_COPY, System.currentTimeMillis())
+                .putLong(PREF_LAST_COPY, now)
+                .putLong(PREF_NEXT_COPY, next)
                 .apply()
 
-            val summary = "Copied $newCount, old $oldSkipped, already $alreadySkipped"
+            val summary = "Copied $newCount - Skipped Old:$oldSkipped - Skipped Blacklist:$alreadySkipped"
             StatusNotifier.showResult(applicationContext, newCount, oldSkipped, alreadySkipped)
             AppLog.add(applicationContext, summary)
-            AppLog.add(applicationContext, "Waiting for next interval")
 
             Log.d(TAG, "Worker finished")
 
             return@withContext Result.success()
         } finally {
             prefs.edit().putBoolean(PREF_IS_RUNNING, false).apply()
-            StatusNotifier.showService(applicationContext)
+            StatusNotifier.hideService(applicationContext)
         }
     }
 
@@ -177,6 +179,7 @@ class FileCopyWorker(
         const val PREF_MAX_AGE_HOURS = "maxAgeH"
         const val PREF_COPIED = "copiedFiles"
         const val PREF_LAST_COPY = "lastCopy"
+        const val PREF_NEXT_COPY = "nextCopy"
         const val PREF_COPY_MODE = "copyMode"
         const val PREF_INTERVAL_MINUTES = "intervalM"
         const val PREF_IS_RUNNING = "copyRunning"

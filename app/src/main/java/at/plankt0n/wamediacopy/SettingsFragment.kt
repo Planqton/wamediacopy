@@ -27,7 +27,6 @@ import androidx.work.workDataOf
 import androidx.work.WorkManager
 import at.plankt0n.wamediacopy.AppLog
 import at.plankt0n.wamediacopy.StatusNotifier
-import at.plankt0n.wamediacopy.CopyService
 import java.util.concurrent.TimeUnit
 
 class SettingsFragment : Fragment() {
@@ -167,18 +166,23 @@ class SettingsFragment : Fragment() {
 
     private fun refreshLastCopy(prefs: android.content.SharedPreferences) {
         val ts = prefs.getLong(FileCopyWorker.PREF_LAST_COPY, 0L)
-        val label = if (ts == 0L) {
+        val lastLabel = if (ts == 0L) {
             "Last: never"
         } else {
             val fmt = android.text.format.DateFormat.format("yyyy-MM-dd HH:mm", ts)
             "Last: $fmt"
         }
-        lastCopyText.text = label
+        val next = prefs.getLong(FileCopyWorker.PREF_NEXT_COPY, 0L)
+        val nextLabel = if (next == 0L) {
+            "Next: -"
+        } else {
+            val fmt = android.text.format.DateFormat.format("yyyy-MM-dd HH:mm", next)
+            "Next: $fmt"
+        }
         val running = prefs.getBoolean(FileCopyWorker.PREF_IS_RUNNING, false)
         manual.isEnabled = !running
-        if (running) {
-            lastCopyText.text = "$label (running)"
-        }
+        val combined = if (running) "$lastLabel (running)\n$nextLabel" else "$lastLabel\n$nextLabel"
+        lastCopyText.text = combined
     }
 
     private fun formatInterval(minutes: Int): String {
@@ -237,12 +241,12 @@ class SettingsFragment : Fragment() {
         val period = if (minutes < 15) 15L else minutes.toLong()
         val request = PeriodicWorkRequestBuilder<FileCopyWorker>(period, TimeUnit.MINUTES).build()
         manager.enqueueUniquePeriodicWork(WORK_NAME, ExistingPeriodicWorkPolicy.UPDATE, request)
-        prefs.edit().putBoolean(FileCopyWorker.PREF_IS_RUNNING, false).apply()
-        StatusNotifier.showService(requireContext())
-        ContextCompat.startForegroundService(
-            requireContext(),
-            Intent(requireContext(), CopyService::class.java)
-        )
+        val next = System.currentTimeMillis() + minutes * 60_000L
+        prefs.edit()
+            .putBoolean(FileCopyWorker.PREF_IS_RUNNING, false)
+            .putLong(FileCopyWorker.PREF_NEXT_COPY, next)
+            .apply()
+        refreshLastCopy(prefs)
     }
 
     private fun scheduleOnce() {
@@ -266,12 +270,12 @@ class SettingsFragment : Fragment() {
         Log.d(TAG, "cancelWork")
         manager.cancelUniqueWork(WORK_NAME)
         val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
-        prefs.edit().putBoolean(FileCopyWorker.PREF_IS_RUNNING, false).apply()
+        prefs.edit()
+            .putBoolean(FileCopyWorker.PREF_IS_RUNNING, false)
+            .remove(FileCopyWorker.PREF_NEXT_COPY)
+            .apply()
         StatusNotifier.hideService(requireContext())
-        ContextCompat.startForegroundService(
-            requireContext(),
-            Intent(requireContext(), CopyService::class.java).apply { action = CopyService.ACTION_STOP }
-        )
+        refreshLastCopy(prefs)
     }
 
     override fun onRequestPermissionsResult(

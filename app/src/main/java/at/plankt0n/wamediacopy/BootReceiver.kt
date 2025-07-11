@@ -7,8 +7,7 @@ import android.preference.PreferenceManager
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
-import androidx.core.content.ContextCompat
-import at.plankt0n.wamediacopy.CopyService
+
 import java.util.concurrent.TimeUnit
 
 class BootReceiver : BroadcastReceiver() {
@@ -26,9 +25,11 @@ class BootReceiver : BroadcastReceiver() {
                     ExistingPeriodicWorkPolicy.UPDATE,
                     request
                 )
-                prefs.edit().putBoolean(FileCopyWorker.PREF_IS_RUNNING, false).apply()
-                val svc = Intent(context, CopyService::class.java)
-                ContextCompat.startForegroundService(context, svc)
+                val next = System.currentTimeMillis() + minutes * 60_000L
+                prefs.edit()
+                    .putBoolean(FileCopyWorker.PREF_IS_RUNNING, false)
+                    .putLong(FileCopyWorker.PREF_NEXT_COPY, next)
+                    .apply()
             }
         }
     }

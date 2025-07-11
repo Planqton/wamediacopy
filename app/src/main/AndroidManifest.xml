@@ -41,10 +41,7 @@
             </intent-filter>
         </receiver>
 
-        <service
-            android:name=".CopyService"
-            android:exported="false"
-            android:foregroundServiceType="dataSync" />
+
 
     </application>
 
