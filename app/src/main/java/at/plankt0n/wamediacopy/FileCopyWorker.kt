@@ -14,6 +14,7 @@ import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
 import at.plankt0n.wamediacopy.AppLog
 import at.plankt0n.wamediacopy.StatusNotifier
+import at.plankt0n.wamediacopy.ReportStore
 import android.text.format.DateFormat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -65,6 +66,9 @@ class FileCopyWorker(
         var newestOldName: String? = null
         var newestOldTime = 0L
         var stop = false
+        val copiedNames = mutableListOf<String>()
+        val oldNames = mutableListOf<String>()
+        val skippedNames = mutableListOf<String>()
 
         prefs.edit()
             .putLong(PREF_PROCESSED, 0L)
@@ -163,6 +167,7 @@ class FileCopyWorker(
                                     }
                                     Log.d(TAG, "Copied file")
                                     copied.add(key)
+                                    copiedNames.add(doc.name ?: doc.uri.toString())
                                     newCount++
                                     prefs.edit().putLong(PREF_COUNT_COPIED, newCount).apply()
                                 }
@@ -171,12 +176,14 @@ class FileCopyWorker(
                             }
                         } else {
                             Log.d(TAG, "Already copied file")
+                            skippedNames.add(doc.name ?: doc.uri.toString())
                             alreadySkipped++
                             prefs.edit().putLong(PREF_COUNT_SKIPPED, alreadySkipped).apply()
                         }
                     } else {
                         Log.d(TAG, "Too old file")
                         oldSkipped++
+                        oldNames.add(doc.name ?: doc.uri.toString())
                         prefs.edit().putLong(PREF_COUNT_OLD, oldSkipped).apply()
                         val ts = doc.lastModified()
                         if (ts > newestOldTime) {
@@ -220,6 +227,15 @@ class FileCopyWorker(
             val summary = "Copied:$newCount - Too Old:$oldSkipped - Skipped:$alreadySkipped"
             StatusNotifier.showResult(applicationContext, newCount, oldSkipped, alreadySkipped)
             AppLog.add(applicationContext, summary)
+            ReportStore.add(
+                applicationContext,
+                ReportStore.CopyReport(
+                    now,
+                    copiedNames,
+                    oldNames,
+                    skippedNames,
+                )
+            )
 
             if (intervalMin > 0) {
                 val periodMin = maxOf(intervalMin, MIN_INTERVAL_MINUTES)
