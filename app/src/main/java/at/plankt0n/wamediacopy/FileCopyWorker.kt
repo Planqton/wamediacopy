@@ -22,7 +22,7 @@ class FileCopyWorker(
     params: WorkerParameters
 ) : CoroutineWorker(ctx, params) {
 
-    private fun createForegroundInfo(processed: Int): ForegroundInfo {
+    private fun createForegroundInfo(processed: Long): ForegroundInfo {
         val channel = NotificationChannel(CHANNEL_ID, "Copy progress", NotificationManager.IMPORTANCE_LOW)
         val nm = applicationContext.getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(channel)
@@ -56,12 +56,12 @@ class FileCopyWorker(
         val requireManual = prefs.getBoolean(PREF_REQUIRE_MANUAL_FIRST, true)
         val alias = prefs.getString(PREF_ALIAS, "") ?: ""
         val copied = prefs.getStringSet(PREF_COPIED, mutableSetOf())?.toMutableSet() ?: mutableSetOf()
-        var newCount = 0
-        var oldSkipped = 0
-        var alreadySkipped = 0
-        var processed = 0
+        var newCount = 0L
+        var oldSkipped = 0L
+        var alreadySkipped = 0L
+        var processed = 0L
 
-        setForeground(createForegroundInfo(0))
+        setForeground(createForegroundInfo(0L))
         val manual = inputData.getBoolean(KEY_MANUAL, false)
         if (!manual && requireManual) {
             Log.d(TAG, "Waiting for manual first copy")
@@ -92,10 +92,16 @@ class FileCopyWorker(
             return@withContext Result.failure()
         }
 
+        val startTs = System.currentTimeMillis()
         val cutoff = if (copyMode == 0) {
-            System.currentTimeMillis() - maxAgeHours * 3600_000L
+            startTs - maxAgeHours * 3600_000L
         } else {
             lastCopy
+        }
+
+        val nextScheduled = if (intervalMin > 0) startTs + intervalMin * 60_000L else 0L
+        if (nextScheduled > 0) {
+            prefs.edit().putLong(PREF_NEXT_COPY, nextScheduled).apply()
         }
 
         suspend fun traverse(dir: DocumentFile) {
@@ -151,11 +157,9 @@ class FileCopyWorker(
             }
 
             val now = System.currentTimeMillis()
-            val next = if (intervalMin > 0) now + intervalMin * 60_000L else 0L
             prefs.edit()
                 .putStringSet(PREF_COPIED, copied)
                 .putLong(PREF_LAST_COPY, now)
-                .putLong(PREF_NEXT_COPY, next)
                 .apply()
 
             val summary = "Copied:$newCount - Too Old:$oldSkipped - Skipped:$alreadySkipped"

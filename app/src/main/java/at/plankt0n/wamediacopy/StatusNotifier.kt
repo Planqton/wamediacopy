@@ -11,7 +11,7 @@ object StatusNotifier {
     private const val RESULT_ID = 2
     const val CHANNEL_ID = "copy_status"
 
-    fun showService(context: Context, processed: Int? = null) {
+    fun showService(context: Context, processed: Long? = null) {
         val channel = NotificationChannel(CHANNEL_ID, "Copy status", NotificationManager.IMPORTANCE_LOW)
         val nm = context.getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(channel)
@@ -25,7 +25,7 @@ object StatusNotifier {
         NotificationManagerCompat.from(context).notify(SERVICE_ID, notif)
     }
 
-    fun showResult(context: Context, copied: Int, old: Int, skipped: Int) {
+    fun showResult(context: Context, copied: Long, old: Long, skipped: Long) {
         val channel = NotificationChannel(CHANNEL_ID, "Copy status", NotificationManager.IMPORTANCE_LOW)
         val nm = context.getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(channel)
