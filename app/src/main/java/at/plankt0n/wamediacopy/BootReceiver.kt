@@ -29,6 +29,7 @@ class BootReceiver : BroadcastReceiver() {
                 prefs.edit()
                     .putBoolean(FileCopyWorker.PREF_IS_RUNNING, false)
                     .remove(FileCopyWorker.PREF_PROCESSED)
+                    .remove(FileCopyWorker.PREF_TOTAL)
                     .putLong(FileCopyWorker.PREF_NEXT_COPY, next)
                     .apply()
             }

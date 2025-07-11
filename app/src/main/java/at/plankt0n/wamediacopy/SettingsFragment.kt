@@ -45,6 +45,7 @@ class SettingsFragment : Fragment(),
     private lateinit var checkPerms: Button
     private lateinit var permStatus: TextView
     private lateinit var lastCopyText: TextView
+    private lateinit var progressBar: android.widget.ProgressBar
     private lateinit var prefs: android.content.SharedPreferences
 
     private val manager by lazy { WorkManager.getInstance(requireContext()) }
@@ -73,6 +74,7 @@ class SettingsFragment : Fragment(),
         checkPerms = view.findViewById(R.id.button_check_perms)
         permStatus = view.findViewById(R.id.text_perm_status)
         lastCopyText = view.findViewById(R.id.text_last_copy)
+        progressBar = view.findViewById(R.id.progress_copy)
 
         prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
         aliasEdit.setText(prefs.getString(FileCopyWorker.PREF_ALIAS, ""))
@@ -178,6 +180,7 @@ class SettingsFragment : Fragment(),
         }
         val running = prefs.getBoolean(FileCopyWorker.PREF_IS_RUNNING, false)
         val processed = prefs.getLong(FileCopyWorker.PREF_PROCESSED, 0L)
+        val total = prefs.getLong(FileCopyWorker.PREF_TOTAL, 0L)
         val copied = prefs.getLong(FileCopyWorker.PREF_COUNT_COPIED, 0L)
         val skipped = prefs.getLong(FileCopyWorker.PREF_COUNT_SKIPPED, 0L)
         val old = prefs.getLong(FileCopyWorker.PREF_COUNT_OLD, 0L)
@@ -191,9 +194,13 @@ class SettingsFragment : Fragment(),
         stop.isEnabled = !running
         checkPerms.isEnabled = !running
 
+        progressBar.max = total.toInt().coerceAtMost(Int.MAX_VALUE)
+        progressBar.progress = processed.toInt().coerceAtMost(Int.MAX_VALUE)
+        progressBar.visibility = if (running && total > 0) View.VISIBLE else View.GONE
+
         val base = "$lastLabel\n$nextLabel"
         val combined = if (running) {
-            "$base\nProcessed: $processed\nCopied: $copied\nSkipped: $skipped\nToo old: $old"
+            "$base\nProcessed: $processed/$total\nCopied: $copied\nSkipped: $skipped\nToo old: $old"
         } else base
         lastCopyText.text = combined
     }
@@ -266,6 +273,7 @@ class SettingsFragment : Fragment(),
         prefs.edit()
             .putBoolean(FileCopyWorker.PREF_IS_RUNNING, false)
             .putLong(FileCopyWorker.PREF_PROCESSED, 0L)
+            .putLong(FileCopyWorker.PREF_TOTAL, 0L)
             .putLong(FileCopyWorker.PREF_NEXT_COPY, next)
             .apply()
         refreshLastCopy(prefs)
@@ -296,7 +304,10 @@ class SettingsFragment : Fragment(),
             val next = System.currentTimeMillis() + minutes * 60_000L
             prefs.edit().putLong(FileCopyWorker.PREF_NEXT_COPY, next).apply()
         }
-        prefs.edit().putLong(FileCopyWorker.PREF_PROCESSED, 0L).apply()
+        prefs.edit()
+            .putLong(FileCopyWorker.PREF_PROCESSED, 0L)
+            .putLong(FileCopyWorker.PREF_TOTAL, 0L)
+            .apply()
         val request = OneTimeWorkRequestBuilder<FileCopyWorker>()
             .setInputData(androidx.work.workDataOf(FileCopyWorker.KEY_MANUAL to true))
             .addTag(FileCopyWorker.TAG)
@@ -312,6 +323,7 @@ class SettingsFragment : Fragment(),
             .putBoolean(FileCopyWorker.PREF_IS_RUNNING, false)
             .remove(FileCopyWorker.PREF_NEXT_COPY)
             .remove(FileCopyWorker.PREF_PROCESSED)
+            .remove(FileCopyWorker.PREF_TOTAL)
             .apply()
         StatusNotifier.hideService(requireContext())
         refreshLastCopy(prefs)
@@ -334,6 +346,7 @@ class SettingsFragment : Fragment(),
     ) {
         if (key == FileCopyWorker.PREF_IS_RUNNING ||
             key == FileCopyWorker.PREF_PROCESSED ||
+            key == FileCopyWorker.PREF_TOTAL ||
             key == FileCopyWorker.PREF_LAST_COPY ||
             key == FileCopyWorker.PREF_NEXT_COPY ||
             key == FileCopyWorker.PREF_COUNT_COPIED ||

@@ -23,14 +23,14 @@ class FileCopyWorker(
     params: WorkerParameters
 ) : CoroutineWorker(ctx, params) {
 
-    private fun createForegroundInfo(processed: Long): ForegroundInfo {
+    private fun createForegroundInfo(processed: Long, total: Long): ForegroundInfo {
         val channel = NotificationChannel(CHANNEL_ID, "Copy progress", NotificationManager.IMPORTANCE_LOW)
         val nm = applicationContext.getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(channel)
         val notif = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_notify_sync)
             .setContentTitle("Whatsapp Copy")
-            .setContentText("Processed files: $processed")
+            .setContentText("Processed files: $processed/$total")
             .setOngoing(true)
             .build()
         val type = if (android.os.Build.VERSION.SDK_INT >= 34) {
@@ -61,6 +61,7 @@ class FileCopyWorker(
         var oldSkipped = 0L
         var alreadySkipped = 0L
         var processed = 0L
+        var total = 0L
         var newestOldName: String? = null
         var newestOldTime = 0L
 
@@ -70,7 +71,6 @@ class FileCopyWorker(
             .putLong(PREF_COUNT_OLD, 0L)
             .putLong(PREF_COUNT_SKIPPED, 0L)
             .apply()
-        setForeground(createForegroundInfo(0L))
         val manual = inputData.getBoolean(KEY_MANUAL, false)
         if (!manual && requireManual) {
             Log.d(TAG, "Waiting for manual first copy")
@@ -113,6 +113,26 @@ class FileCopyWorker(
             prefs.edit().putLong(PREF_NEXT_COPY, nextScheduled).apply()
         }
 
+        fun countFiles(dir: DocumentFile) {
+            for (doc in dir.listFiles()) {
+                if (doc.isDirectory) {
+                    countFiles(doc)
+                } else if (doc.isFile) {
+                    total++
+                }
+            }
+        }
+
+        for (src in sources) {
+            val sDir = DocumentFile.fromTreeUri(applicationContext, Uri.parse(src))
+            if (sDir != null && sDir.isDirectory) {
+                countFiles(sDir)
+            }
+        }
+
+        prefs.edit().putLong(PREF_TOTAL, total).apply()
+        setForeground(createForegroundInfo(0L, total))
+
         suspend fun traverse(dir: DocumentFile) {
             for (doc in dir.listFiles()) {
                 if (doc.isDirectory) {
@@ -122,7 +142,7 @@ class FileCopyWorker(
                     prefs.edit()
                         .putLong(PREF_PROCESSED, processed)
                         .apply()
-                    setForeground(createForegroundInfo(processed))
+                    setForeground(createForegroundInfo(processed, total))
                     if (doc.lastModified() >= cutoff) {
                         val key = doc.uri.toString()
                         if (!copied.contains(key)) {
@@ -214,6 +234,7 @@ class FileCopyWorker(
             prefs.edit()
                 .putBoolean(PREF_IS_RUNNING, false)
                 .remove(PREF_PROCESSED)
+                .remove(PREF_TOTAL)
                 .remove(PREF_COUNT_COPIED)
                 .remove(PREF_COUNT_OLD)
                 .remove(PREF_COUNT_SKIPPED)
@@ -244,6 +265,7 @@ class FileCopyWorker(
         const val PREF_INTERVAL_MINUTES = "intervalM"
         const val PREF_IS_RUNNING = "copyRunning"
         const val PREF_PROCESSED = "processed"
+        const val PREF_TOTAL = "totalFiles"
         const val PREF_COUNT_COPIED = "countCopied"
         const val PREF_COUNT_OLD = "countOld"
         const val PREF_COUNT_SKIPPED = "countSkipped"
