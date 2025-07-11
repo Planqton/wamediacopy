@@ -97,22 +97,19 @@ class FileCopyWorker(
                                             input.copyTo(output)
                                         }
                                     }
-                                    Log.d(TAG, "Copied ${doc.uri} -> ${target.uri}")
-                                    AppLog.add(applicationContext, "Copied ${doc.uri}")
+                                    Log.d(TAG, "Copied file")
                                     copied.add(key)
                                     newCount++
                                 }
                             } catch (e: Exception) {
-                                Log.w(TAG, "Failed to copy ${doc.uri}", e)
+                                Log.w(TAG, "Failed to copy file", e)
                             }
                         } else {
-                            Log.d(TAG, "Already copied ${doc.uri}")
-                            AppLog.add(applicationContext, "Skipped existing ${doc.uri}")
+                            Log.d(TAG, "Already copied file")
                             alreadySkipped++
                         }
                     } else {
-                        Log.d(TAG, "Too old ${doc.uri}")
-                        AppLog.add(applicationContext, "Skipped old ${doc.uri}")
+                        Log.d(TAG, "Too old file")
                         oldSkipped++
                     }
                 }
