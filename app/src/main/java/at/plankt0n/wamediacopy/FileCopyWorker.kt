@@ -14,6 +14,7 @@ import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
 import at.plankt0n.wamediacopy.AppLog
 import at.plankt0n.wamediacopy.StatusNotifier
+import android.text.format.DateFormat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -60,6 +61,8 @@ class FileCopyWorker(
         var oldSkipped = 0L
         var alreadySkipped = 0L
         var processed = 0L
+        var newestOldName: String? = null
+        var newestOldTime = 0L
 
         prefs.edit()
             .putLong(PREF_PROCESSED, 0L)
@@ -167,6 +170,11 @@ class FileCopyWorker(
                         Log.d(TAG, "Too old file")
                         oldSkipped++
                         prefs.edit().putLong(PREF_COUNT_OLD, oldSkipped).apply()
+                        val ts = doc.lastModified()
+                        if (ts > newestOldTime) {
+                            newestOldTime = ts
+                            newestOldName = doc.name ?: doc.uri.toString()
+                        }
                     }
                 }
             }
@@ -192,6 +200,13 @@ class FileCopyWorker(
             StatusNotifier.showResult(applicationContext, newCount, oldSkipped, alreadySkipped)
             AppLog.add(applicationContext, summary)
 
+            if (newestOldName != null) {
+                val age = formatAge(now - newestOldTime)
+                val tsStr = DateFormat.format("yyyy-MM-dd HH:mm:ss", newestOldTime).toString()
+                val msg = "Newest too old: $newestOldName - $age - $tsStr"
+                AppLog.add(applicationContext, msg)
+            }
+
             Log.d(TAG, "Worker finished")
 
             return@withContext Result.success()
@@ -204,6 +219,17 @@ class FileCopyWorker(
                 .remove(PREF_COUNT_SKIPPED)
                 .apply()
         }
+    }
+
+    private fun formatAge(ms: Long): String {
+        var s = ms / 1000
+        val days = s / (24 * 3600)
+        s %= 24 * 3600
+        val hours = s / 3600
+        s %= 3600
+        val minutes = s / 60
+        s %= 60
+        return String.format("%02d:%02d:%02d:%02d", days, hours, minutes, s)
     }
 
     companion object {
