@@ -79,8 +79,7 @@ class SettingsFragment : Fragment(),
 
         prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
         aliasEdit.setText(prefs.getString(FileCopyWorker.PREF_ALIAS, ""))
-        val ageMinutes = prefs.getInt(FileCopyWorker.PREF_MAX_AGE_MINUTES, 24 * 60)
-        ageText.text = formatDuration(ageMinutes)
+        refreshAge()
         val mode = prefs.getInt(FileCopyWorker.PREF_COPY_MODE, 0)
         modeGroup.check(if (mode == 0) R.id.radio_mode_age else R.id.radio_mode_last)
         val interval = prefs.getInt(FileCopyWorker.PREF_INTERVAL_MINUTES, 720)
@@ -128,6 +127,7 @@ class SettingsFragment : Fragment(),
         modeGroup.setOnCheckedChangeListener { _, checkedId ->
             val modeValue = if (checkedId == R.id.radio_mode_age) 0 else 1
             prefs.edit().putInt(FileCopyWorker.PREF_COPY_MODE, modeValue).apply()
+            refreshAge()
         }
 
         intervalButton.setOnClickListener {
@@ -198,6 +198,24 @@ class SettingsFragment : Fragment(),
             "$base\nProcessed: $processed\nCopied: $copied\nSkipped: $skipped\nToo old: $old"
         } else base
         lastCopyText.text = combined
+        refreshAge()
+    }
+
+    private fun refreshAge() {
+        val mode = prefs.getInt(FileCopyWorker.PREF_COPY_MODE, 0)
+        if (mode == 0) {
+            val ageMinutes = prefs.getInt(FileCopyWorker.PREF_MAX_AGE_MINUTES, 24 * 60)
+            ageText.text = formatDuration(ageMinutes)
+        } else {
+            val last = prefs.getLong(FileCopyWorker.PREF_LAST_COPY, 0L)
+            if (last == 0L) {
+                ageText.text = "-"
+            } else {
+                val diff = ((System.currentTimeMillis() - last) / 60_000).toInt()
+                ageText.text = formatDuration(diff)
+                prefs.edit().putInt(FileCopyWorker.PREF_MAX_AGE_MINUTES, diff).apply()
+            }
+        }
     }
 
     private fun formatDuration(minutes: Int): String {
@@ -338,6 +356,7 @@ class SettingsFragment : Fragment(),
             key == FileCopyWorker.PREF_PROCESSED ||
             key == FileCopyWorker.PREF_LAST_COPY ||
             key == FileCopyWorker.PREF_NEXT_COPY ||
+            key == FileCopyWorker.PREF_COPY_MODE ||
             key == FileCopyWorker.PREF_COUNT_COPIED ||
             key == FileCopyWorker.PREF_COUNT_SKIPPED ||
             key == FileCopyWorker.PREF_COUNT_OLD) {

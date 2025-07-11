@@ -50,7 +50,7 @@ class FileCopyWorker(
         }
         val sources = prefs.getStringSet(PREF_SOURCES, emptySet()) ?: emptySet()
         val destUri = prefs.getString(PREF_DEST, null)
-        val maxAgeMinutes = prefs.getInt(PREF_MAX_AGE_MINUTES, 24 * 60)
+        var maxAgeMinutes = prefs.getInt(PREF_MAX_AGE_MINUTES, 24 * 60)
         val copyMode = prefs.getInt(PREF_COPY_MODE, 0)
         val lastCopy = prefs.getLong(PREF_LAST_COPY, 0L)
         val intervalMin = prefs.getInt(PREF_INTERVAL_MINUTES, 0)
@@ -104,6 +104,10 @@ class FileCopyWorker(
         }
 
         val startTs = System.currentTimeMillis()
+        if (copyMode == 1 && lastCopy > 0L) {
+            maxAgeMinutes = ((startTs - lastCopy) / 60_000).toInt()
+            prefs.edit().putInt(PREF_MAX_AGE_MINUTES, maxAgeMinutes).apply()
+        }
         val cutoff = if (copyMode == 0) {
             startTs - maxAgeMinutes * 60_000L
         } else {
