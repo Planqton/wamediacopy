@@ -27,8 +27,9 @@ class FileCopyWorker(
         val nm = applicationContext.getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(channel)
         val notif = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.stat_sys_upload)
-            .setContentTitle("Files Processed: $processed")
+            .setSmallIcon(android.R.drawable.stat_notify_sync)
+            .setContentTitle("Whatsapp Copy")
+            .setContentText("Processed files: $processed")
             .setOngoing(true)
             .build()
         val type = if (android.os.Build.VERSION.SDK_INT >= 34) {
@@ -78,7 +79,6 @@ class FileCopyWorker(
                 return@withContext Result.success()
             }
         }
-        StatusNotifier.showService(applicationContext, 0)
 
         if (destUri.isNullOrBlank()) {
             Log.d(TAG, "No destination set")
@@ -105,7 +105,6 @@ class FileCopyWorker(
                 } else if (doc.isFile) {
                     processed++
                     setForeground(createForegroundInfo(processed))
-                    StatusNotifier.showService(applicationContext, processed)
                     if (doc.lastModified() >= cutoff) {
                         val key = doc.uri.toString()
                         if (!copied.contains(key)) {
@@ -168,7 +167,6 @@ class FileCopyWorker(
             return@withContext Result.success()
         } finally {
             prefs.edit().putBoolean(PREF_IS_RUNNING, false).apply()
-            StatusNotifier.hideService(applicationContext)
         }
     }
 

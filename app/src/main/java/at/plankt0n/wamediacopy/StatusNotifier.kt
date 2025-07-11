@@ -39,6 +39,8 @@ object StatusNotifier {
     }
 
     fun hideService(context: Context) {
-        NotificationManagerCompat.from(context).cancel(SERVICE_ID)
+        val nm = NotificationManagerCompat.from(context)
+        nm.cancel(SERVICE_ID)
+        nm.cancel(FileCopyWorker.FOREGROUND_ID)
     }
 }
