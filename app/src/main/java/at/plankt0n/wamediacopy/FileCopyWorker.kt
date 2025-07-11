@@ -98,7 +98,7 @@ class FileCopyWorker(
             lastCopy
         }
 
-        fun traverse(dir: DocumentFile) {
+        suspend fun traverse(dir: DocumentFile) {
             for (doc in dir.listFiles()) {
                 if (doc.isDirectory) {
                     traverse(doc)
