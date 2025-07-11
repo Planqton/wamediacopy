@@ -153,8 +153,6 @@ class SettingsFragment : Fragment(),
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
 
-        if (toggle.isChecked) scheduleWork() else cancelWork()
-
         refreshLastCopy(prefs)
         permStatus.text = ensurePermissions()
     }
