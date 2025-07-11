@@ -61,6 +61,7 @@ class FileCopyWorker(
         var alreadySkipped = 0L
         var processed = 0L
 
+        prefs.edit().putLong(PREF_PROCESSED, 0L).apply()
         setForeground(createForegroundInfo(0L))
         val manual = inputData.getBoolean(KEY_MANUAL, false)
         if (!manual && requireManual) {
@@ -110,6 +111,7 @@ class FileCopyWorker(
                     traverse(doc)
                 } else if (doc.isFile) {
                     processed++
+                    prefs.edit().putLong(PREF_PROCESSED, processed).apply()
                     setForeground(createForegroundInfo(processed))
                     if (doc.lastModified() >= cutoff) {
                         val key = doc.uri.toString()
@@ -170,7 +172,10 @@ class FileCopyWorker(
 
             return@withContext Result.success()
         } finally {
-            prefs.edit().putBoolean(PREF_IS_RUNNING, false).apply()
+            prefs.edit()
+                .putBoolean(PREF_IS_RUNNING, false)
+                .remove(PREF_PROCESSED)
+                .apply()
         }
     }
 
@@ -185,6 +190,7 @@ class FileCopyWorker(
         const val PREF_COPY_MODE = "copyMode"
         const val PREF_INTERVAL_MINUTES = "intervalM"
         const val PREF_IS_RUNNING = "copyRunning"
+        const val PREF_PROCESSED = "processed"
         const val PREF_REQUIRE_MANUAL_FIRST = "requireManual"
         const val KEY_MANUAL = "manual"
         const val CHANNEL_ID = "copy_status"

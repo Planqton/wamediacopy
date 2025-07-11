@@ -28,6 +28,7 @@ class BootReceiver : BroadcastReceiver() {
                 val next = System.currentTimeMillis() + minutes * 60_000L
                 prefs.edit()
                     .putBoolean(FileCopyWorker.PREF_IS_RUNNING, false)
+                    .remove(FileCopyWorker.PREF_PROCESSED)
                     .putLong(FileCopyWorker.PREF_NEXT_COPY, next)
                     .apply()
             }

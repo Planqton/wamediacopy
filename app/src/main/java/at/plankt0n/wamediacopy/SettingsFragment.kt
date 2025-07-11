@@ -29,7 +29,8 @@ import at.plankt0n.wamediacopy.AppLog
 import at.plankt0n.wamediacopy.StatusNotifier
 import java.util.concurrent.TimeUnit
 
-class SettingsFragment : Fragment() {
+class SettingsFragment : Fragment(),
+    android.content.SharedPreferences.OnSharedPreferenceChangeListener {
 
     private lateinit var aliasEdit: EditText
     private lateinit var ageSeek: SeekBar
@@ -43,6 +44,7 @@ class SettingsFragment : Fragment() {
     private lateinit var checkPerms: Button
     private lateinit var permStatus: TextView
     private lateinit var lastCopyText: TextView
+    private lateinit var prefs: android.content.SharedPreferences
 
     private val manager by lazy { WorkManager.getInstance(requireContext()) }
 
@@ -71,7 +73,7 @@ class SettingsFragment : Fragment() {
         permStatus = view.findViewById(R.id.text_perm_status)
         lastCopyText = view.findViewById(R.id.text_last_copy)
 
-        val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
+        prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
         aliasEdit.setText(prefs.getString(FileCopyWorker.PREF_ALIAS, ""))
         val hours = prefs.getInt(FileCopyWorker.PREF_MAX_AGE_HOURS, 24)
         val days = if (hours / 24 > 0) hours / 24 else 1
@@ -159,9 +161,14 @@ class SettingsFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
+        prefs.registerOnSharedPreferenceChangeListener(this)
         refreshLastCopy(prefs)
         permStatus.text = ensurePermissions()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        prefs.unregisterOnSharedPreferenceChangeListener(this)
     }
 
     private fun refreshLastCopy(prefs: android.content.SharedPreferences) {
@@ -180,8 +187,19 @@ class SettingsFragment : Fragment() {
             "Next: $fmt"
         }
         val running = prefs.getBoolean(FileCopyWorker.PREF_IS_RUNNING, false)
+        val processed = prefs.getLong(FileCopyWorker.PREF_PROCESSED, 0L)
+
         manual.isEnabled = !running
-        val combined = if (running) "$lastLabel (running)\n$nextLabel" else "$lastLabel\n$nextLabel"
+        aliasEdit.isEnabled = !running
+        ageSeek.isEnabled = !running
+        modeGroup.isEnabled = !running
+        intervalSeek.isEnabled = !running
+        toggle.isEnabled = !running
+        stop.isEnabled = !running
+        checkPerms.isEnabled = !running
+
+        val base = "$lastLabel\n$nextLabel"
+        val combined = if (running) "$base\nProcessed: $processed" else base
         lastCopyText.text = combined
     }
 
@@ -233,7 +251,6 @@ class SettingsFragment : Fragment() {
 
     private fun scheduleWork() {
         Log.d(TAG, "scheduleWork")
-        val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
         val minutes = prefs.getInt(FileCopyWorker.PREF_INTERVAL_MINUTES, 720)
         if (prefs.getLong(FileCopyWorker.PREF_LAST_COPY, 0L) == 0L) {
             prefs.edit().putBoolean(FileCopyWorker.PREF_REQUIRE_MANUAL_FIRST, true).apply()
@@ -244,6 +261,7 @@ class SettingsFragment : Fragment() {
         val next = System.currentTimeMillis() + minutes * 60_000L
         prefs.edit()
             .putBoolean(FileCopyWorker.PREF_IS_RUNNING, false)
+            .putLong(FileCopyWorker.PREF_PROCESSED, 0L)
             .putLong(FileCopyWorker.PREF_NEXT_COPY, next)
             .apply()
         refreshLastCopy(prefs)
@@ -251,7 +269,6 @@ class SettingsFragment : Fragment() {
 
     private fun scheduleOnce() {
         Log.d(TAG, "scheduleOnce")
-        val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
         if (prefs.getBoolean(FileCopyWorker.PREF_IS_RUNNING, false)) {
             AppLog.add(requireContext(), "Copy already running")
             return
@@ -273,6 +290,7 @@ class SettingsFragment : Fragment() {
             val next = System.currentTimeMillis() + minutes * 60_000L
             prefs.edit().putLong(FileCopyWorker.PREF_NEXT_COPY, next).apply()
         }
+        prefs.edit().putLong(FileCopyWorker.PREF_PROCESSED, 0L).apply()
         val request = OneTimeWorkRequestBuilder<FileCopyWorker>()
             .setInputData(androidx.work.workDataOf(FileCopyWorker.KEY_MANUAL to true))
             .build()
@@ -283,10 +301,10 @@ class SettingsFragment : Fragment() {
     private fun cancelWork() {
         Log.d(TAG, "cancelWork")
         manager.cancelUniqueWork(WORK_NAME)
-        val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
         prefs.edit()
             .putBoolean(FileCopyWorker.PREF_IS_RUNNING, false)
             .remove(FileCopyWorker.PREF_NEXT_COPY)
+            .remove(FileCopyWorker.PREF_PROCESSED)
             .apply()
         StatusNotifier.hideService(requireContext())
         refreshLastCopy(prefs)
@@ -300,6 +318,18 @@ class SettingsFragment : Fragment() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == REQ_PERMS) {
             permStatus.text = ensurePermissions()
+        }
+    }
+
+    override fun onSharedPreferenceChanged(
+        sharedPreferences: android.content.SharedPreferences?,
+        key: String?
+    ) {
+        if (key == FileCopyWorker.PREF_IS_RUNNING ||
+            key == FileCopyWorker.PREF_PROCESSED ||
+            key == FileCopyWorker.PREF_LAST_COPY ||
+            key == FileCopyWorker.PREF_NEXT_COPY) {
+            refreshLastCopy(prefs)
         }
     }
 
