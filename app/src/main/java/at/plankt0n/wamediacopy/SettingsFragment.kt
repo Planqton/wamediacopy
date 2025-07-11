@@ -83,7 +83,7 @@ class SettingsFragment : Fragment() {
         intervalSeek.max = 144
         intervalSeek.progress = interval / 10
         intervalText.text = formatInterval(interval)
-        toggle.isChecked = prefs.getBoolean(PREF_ENABLED, false)
+        toggle.isChecked = prefs.getBoolean(PREF_ENABLED, true)
 
         toggle.setOnCheckedChangeListener { _, isChecked ->
             prefs.edit().putBoolean(PREF_ENABLED, isChecked).apply()

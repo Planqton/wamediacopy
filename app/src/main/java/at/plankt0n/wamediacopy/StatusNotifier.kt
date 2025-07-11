@@ -35,7 +35,7 @@ object StatusNotifier {
         nm.createNotificationChannel(channel)
         val text = remainingLabel(context) ?: if (running) "Kopiere..." else "Bereit"
         val notif = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setContentTitle("Background copy running")
+            .setContentTitle("WhatsappCopy l\u00e4uft")
             .setContentText(text)
             .setSmallIcon(android.R.drawable.stat_notify_sync)
             .setOngoing(true)

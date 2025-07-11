@@ -7,14 +7,16 @@ import android.preference.PreferenceManager
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
-import at.plankt0n.wamediacopy.StatusNotifier
+import at.plankt0n.wamediacopy.CopyService
 import java.util.concurrent.TimeUnit
 
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
+        val action = intent.action
+        if (action == Intent.ACTION_BOOT_COMPLETED ||
+            action == Intent.ACTION_MY_PACKAGE_REPLACED) {
             val prefs = PreferenceManager.getDefaultSharedPreferences(context)
-            if (prefs.getBoolean(SettingsFragment.PREF_ENABLED, false)) {
+            if (prefs.getBoolean(SettingsFragment.PREF_ENABLED, true)) {
                 val minutes = prefs.getInt(FileCopyWorker.PREF_INTERVAL_MINUTES, 720)
                 val period = if (minutes < 15) 15L else minutes.toLong()
                 val request = PeriodicWorkRequestBuilder<FileCopyWorker>(period, TimeUnit.MINUTES).build()
@@ -23,7 +25,8 @@ class BootReceiver : BroadcastReceiver() {
                     ExistingPeriodicWorkPolicy.UPDATE,
                     request
                 )
-                StatusNotifier.show(context, false)
+                val svc = Intent(context, CopyService::class.java)
+                context.startForegroundService(svc)
             }
         }
     }
