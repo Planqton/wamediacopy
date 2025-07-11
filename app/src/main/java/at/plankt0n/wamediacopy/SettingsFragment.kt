@@ -237,6 +237,7 @@ class SettingsFragment : Fragment() {
         val period = if (minutes < 15) 15L else minutes.toLong()
         val request = PeriodicWorkRequestBuilder<FileCopyWorker>(period, TimeUnit.MINUTES).build()
         manager.enqueueUniquePeriodicWork(WORK_NAME, ExistingPeriodicWorkPolicy.UPDATE, request)
+        prefs.edit().putBoolean(FileCopyWorker.PREF_IS_RUNNING, false).apply()
         StatusNotifier.show(requireContext(), false)
         ContextCompat.startForegroundService(
             requireContext(),
@@ -264,6 +265,8 @@ class SettingsFragment : Fragment() {
     private fun cancelWork() {
         Log.d(TAG, "cancelWork")
         manager.cancelUniqueWork(WORK_NAME)
+        val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
+        prefs.edit().putBoolean(FileCopyWorker.PREF_IS_RUNNING, false).apply()
         StatusNotifier.hide(requireContext())
         ContextCompat.startForegroundService(
             requireContext(),

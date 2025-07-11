@@ -21,6 +21,8 @@ class CopyService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        val prefs = android.preference.PreferenceManager.getDefaultSharedPreferences(this)
+        prefs.edit().putBoolean(FileCopyWorker.PREF_IS_RUNNING, false).apply()
         startForegroundInternal()
         handler.post(updateRunnable)
     }

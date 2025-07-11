@@ -26,6 +26,7 @@ class BootReceiver : BroadcastReceiver() {
                     ExistingPeriodicWorkPolicy.UPDATE,
                     request
                 )
+                prefs.edit().putBoolean(FileCopyWorker.PREF_IS_RUNNING, false).apply()
                 val svc = Intent(context, CopyService::class.java)
                 ContextCompat.startForegroundService(context, svc)
             }
