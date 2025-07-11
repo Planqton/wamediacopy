@@ -22,13 +22,13 @@ class FileCopyWorker(
     params: WorkerParameters
 ) : CoroutineWorker(ctx, params) {
 
-    private fun createForegroundInfo(): ForegroundInfo {
+    private fun createForegroundInfo(processed: Int): ForegroundInfo {
         val channel = NotificationChannel(CHANNEL_ID, "Copy progress", NotificationManager.IMPORTANCE_LOW)
         val nm = applicationContext.getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(channel)
         val notif = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_sys_upload)
-            .setContentTitle("Copying files")
+            .setContentTitle("Processed files: $processed")
             .setOngoing(true)
             .build()
         val type = if (android.os.Build.VERSION.SDK_INT >= 34) {
@@ -60,7 +60,7 @@ class FileCopyWorker(
         var alreadySkipped = 0
         var processed = 0
 
-        setForeground(createForegroundInfo())
+        setForeground(createForegroundInfo(0))
         val manual = inputData.getBoolean(KEY_MANUAL, false)
         if (!manual && requireManual) {
             Log.d(TAG, "Waiting for manual first copy")
@@ -104,6 +104,7 @@ class FileCopyWorker(
                     traverse(doc)
                 } else if (doc.isFile) {
                     processed++
+                    setForeground(createForegroundInfo(processed))
                     StatusNotifier.showService(applicationContext, processed)
                     if (doc.lastModified() >= cutoff) {
                         val key = doc.uri.toString()
