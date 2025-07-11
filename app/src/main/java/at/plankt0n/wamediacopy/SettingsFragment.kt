@@ -188,7 +188,6 @@ class SettingsFragment : Fragment(),
 
         manual.isEnabled = !running
         aliasEdit.isEnabled = !running
-        ageButton.isEnabled = !running
         modeGroup.isEnabled = !running
         intervalButton.isEnabled = !running
         toggle.isEnabled = !running
@@ -223,6 +222,8 @@ class SettingsFragment : Fragment(),
                 prefs.edit().putInt(FileCopyWorker.PREF_SINCE_AGE_MINUTES, diff).apply()
             }
         }
+        val running = prefs.getBoolean(FileCopyWorker.PREF_IS_RUNNING, false)
+        ageButton.isEnabled = !running && mode == 0
     }
 
     private fun formatDuration(minutes: Int): String {
@@ -289,7 +290,9 @@ class SettingsFragment : Fragment(),
             .addTag(FileCopyWorker.TAG)
             .build()
         manager.enqueueUniquePeriodicWork(WORK_NAME, ExistingPeriodicWorkPolicy.UPDATE, request)
-        val next = System.currentTimeMillis() + minutes * 60_000L
+        val last = prefs.getLong(FileCopyWorker.PREF_LAST_COPY, 0L)
+        val base = if (last > 0L) maxOf(System.currentTimeMillis(), last) else System.currentTimeMillis()
+        val next = base + minutes * 60_000L
         prefs.edit()
             .putBoolean(FileCopyWorker.PREF_IS_RUNNING, false)
             .putLong(FileCopyWorker.PREF_PROCESSED, 0L)
@@ -320,7 +323,9 @@ class SettingsFragment : Fragment(),
                 ExistingPeriodicWorkPolicy.UPDATE,
                 requestPeriodic
             )
-            val next = System.currentTimeMillis() + minutes * 60_000L
+            val last = prefs.getLong(FileCopyWorker.PREF_LAST_COPY, 0L)
+            val base = if (last > 0L) maxOf(System.currentTimeMillis(), last) else System.currentTimeMillis()
+            val next = base + minutes * 60_000L
             prefs.edit().putLong(FileCopyWorker.PREF_NEXT_COPY, next).apply()
         }
         prefs.edit().putLong(FileCopyWorker.PREF_PROCESSED, 0L).apply()

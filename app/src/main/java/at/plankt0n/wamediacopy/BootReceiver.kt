@@ -25,7 +25,9 @@ class BootReceiver : BroadcastReceiver() {
                     ExistingPeriodicWorkPolicy.UPDATE,
                     request
                 )
-                val next = System.currentTimeMillis() + minutes * 60_000L
+                val last = prefs.getLong(FileCopyWorker.PREF_LAST_COPY, 0L)
+                val base = if (last > 0L) maxOf(System.currentTimeMillis(), last) else System.currentTimeMillis()
+                val next = base + minutes * 60_000L
                 prefs.edit()
                     .putBoolean(FileCopyWorker.PREF_IS_RUNNING, false)
                     .remove(FileCopyWorker.PREF_PROCESSED)

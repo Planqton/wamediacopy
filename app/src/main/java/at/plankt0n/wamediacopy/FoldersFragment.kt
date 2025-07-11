@@ -15,6 +15,7 @@ import android.widget.TextView
 import androidx.fragment.app.Fragment
 import at.plankt0n.wamediacopy.AppLog
 import android.content.SharedPreferences
+import android.net.Uri
 
 class FoldersFragment : Fragment(), SharedPreferences.OnSharedPreferenceChangeListener {
 
@@ -46,7 +47,7 @@ class FoldersFragment : Fragment(), SharedPreferences.OnSharedPreferenceChangeLi
         sources.clear()
         sources.addAll(prefs.getStringSet(FileCopyWorker.PREF_SOURCES, emptySet()) ?: emptySet())
         refreshSources(prefs)
-        destEdit.setText(prefs.getString(FileCopyWorker.PREF_DEST, ""))
+        destEdit.setText(Uri.decode(prefs.getString(FileCopyWorker.PREF_DEST, "")))
 
         addSource.setOnClickListener {
             Log.d(TAG, "add source pressed")
@@ -57,14 +58,7 @@ class FoldersFragment : Fragment(), SharedPreferences.OnSharedPreferenceChangeLi
             pickFolder(REQ_PICK_DEST)
         }
 
-        destEdit.addTextChangedListener(object : android.text.TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            override fun afterTextChanged(s: android.text.Editable?) {
-                prefs.edit().putString(FileCopyWorker.PREF_DEST, destEdit.text.toString()).apply()
-                AppLog.add(requireContext(), "Set destination ${destEdit.text}")
-            }
-        })
+        destEdit.isEnabled = false
         updateEnabledState()
     }
 
@@ -83,7 +77,7 @@ class FoldersFragment : Fragment(), SharedPreferences.OnSharedPreferenceChangeLi
         for (uri in sources) {
             val row = LinearLayout(requireContext()).apply { orientation = LinearLayout.HORIZONTAL }
             val tv = TextView(requireContext()).apply {
-                text = uri
+                text = Uri.decode(uri)
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             }
             val remove = Button(requireContext()).apply { text = "X" }
@@ -118,7 +112,7 @@ class FoldersFragment : Fragment(), SharedPreferences.OnSharedPreferenceChangeLi
                     AppLog.add(requireContext(), "Added source $uri")
                 }
                 REQ_PICK_DEST -> {
-                    destEdit.setText(uri.toString())
+                    destEdit.setText(Uri.decode(uri.toString()))
                     prefs.edit().putString(FileCopyWorker.PREF_DEST, uri.toString()).apply()
                     AppLog.add(requireContext(), "Set destination $uri")
                 }
@@ -130,7 +124,7 @@ class FoldersFragment : Fragment(), SharedPreferences.OnSharedPreferenceChangeLi
         val running = prefs.getBoolean(FileCopyWorker.PREF_IS_RUNNING, false)
         addSource.isEnabled = !running
         pickDest.isEnabled = !running
-        destEdit.isEnabled = !running
+        destEdit.isEnabled = false
         for (i in 0 until sourcesLayout.childCount) {
             sourcesLayout.getChildAt(i).isEnabled = !running
         }

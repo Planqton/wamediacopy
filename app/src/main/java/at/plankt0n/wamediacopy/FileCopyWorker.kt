@@ -116,10 +116,6 @@ class FileCopyWorker(
             lastCopy
         }
 
-        val nextScheduled = if (intervalMin > 0) startTs + intervalMin * 60_000L else 0L
-        if (nextScheduled > 0) {
-            prefs.edit().putLong(PREF_NEXT_COPY, nextScheduled).apply()
-        }
 
         suspend fun traverse(dir: DocumentFile) {
             for (doc in dir.listFiles()) {
@@ -223,6 +219,11 @@ class FileCopyWorker(
             val summary = "Copied:$newCount - Too Old:$oldSkipped - Skipped:$alreadySkipped"
             StatusNotifier.showResult(applicationContext, newCount, oldSkipped, alreadySkipped)
             AppLog.add(applicationContext, summary)
+
+            if (intervalMin > 0) {
+                val nextScheduled = now + intervalMin * 60_000L
+                prefs.edit().putLong(PREF_NEXT_COPY, nextScheduled).apply()
+            }
 
             if (newestOldName != null) {
                 val age = formatAge(now - newestOldTime)
