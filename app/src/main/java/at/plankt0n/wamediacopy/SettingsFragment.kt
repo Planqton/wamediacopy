@@ -202,7 +202,14 @@ class SettingsFragment : Fragment() {
         }
         if (needReq.isNotEmpty()) {
             if (request) {
-                requestPermissions(needReq.toTypedArray(), REQ_PERMS)
+                val show = needReq.any { shouldShowRequestPermissionRationale(it) }
+                if (show) {
+                    requestPermissions(needReq.toTypedArray(), REQ_PERMS)
+                } else {
+                    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                    intent.data = Uri.fromParts("package", ctx.packageName, null)
+                    startActivity(intent)
+                }
             }
             missing.addAll(needReq.map { it.substringAfterLast('.') })
         }
