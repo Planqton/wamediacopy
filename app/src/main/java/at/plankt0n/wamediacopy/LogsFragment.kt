@@ -5,12 +5,14 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
-import android.widget.TextView
+import android.widget.ArrayAdapter
+import android.widget.ListView
 import androidx.fragment.app.Fragment
 
 class LogsFragment : Fragment() {
 
-    private lateinit var logText: TextView
+    private lateinit var logList: ListView
+    private lateinit var adapter: ArrayAdapter<String>
     private lateinit var clearButton: Button
 
     override fun onCreateView(
@@ -23,8 +25,11 @@ class LogsFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        logText = view.findViewById(R.id.text_logs)
+        logList = view.findViewById(R.id.list_logs)
         clearButton = view.findViewById(R.id.button_clear_logs)
+
+        adapter = ArrayAdapter(requireContext(), R.layout.item_log, mutableListOf())
+        logList.adapter = adapter
 
         clearButton.setOnClickListener {
             AppLog.clear(requireContext())
@@ -38,6 +43,8 @@ class LogsFragment : Fragment() {
     }
 
     private fun refresh() {
-        logText.text = AppLog.get(requireContext()).joinToString("\n")
+        val lines = AppLog.get(requireContext()).asReversed()
+        adapter.clear()
+        adapter.addAll(lines)
     }
 }
