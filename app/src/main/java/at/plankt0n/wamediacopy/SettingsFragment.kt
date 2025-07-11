@@ -12,6 +12,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.RadioGroup
 import android.widget.NumberPicker
+import android.widget.SeekBar
 import android.widget.Switch
 import android.widget.TextView
 import android.os.PowerManager
@@ -37,7 +38,7 @@ class SettingsFragment : Fragment(),
     private lateinit var ageButton: Button
     private lateinit var ageText: TextView
     private lateinit var modeGroup: RadioGroup
-    private lateinit var intervalButton: Button
+    private lateinit var intervalSeek: SeekBar
     private lateinit var intervalText: TextView
     private lateinit var toggle: Switch
     private lateinit var manual: Button
@@ -65,7 +66,7 @@ class SettingsFragment : Fragment(),
         ageButton = view.findViewById(R.id.button_age)
         ageText = view.findViewById(R.id.text_age)
         modeGroup = view.findViewById(R.id.radio_mode)
-        intervalButton = view.findViewById(R.id.button_interval)
+        intervalSeek = view.findViewById(R.id.seek_interval)
         intervalText = view.findViewById(R.id.text_interval)
         toggle = view.findViewById(R.id.switch_run)
         manual = view.findViewById(R.id.button_manual)
@@ -81,7 +82,7 @@ class SettingsFragment : Fragment(),
         val mode = prefs.getInt(FileCopyWorker.PREF_COPY_MODE, 0)
         modeGroup.check(if (mode == 0) R.id.radio_mode_age else R.id.radio_mode_last)
         val interval = prefs.getInt(FileCopyWorker.PREF_INTERVAL_MINUTES, 720)
-        intervalText.text = formatDuration(interval)
+        intervalText.text = formatInterval(interval)
         toggle.isChecked = prefs.getBoolean(PREF_ENABLED, true)
 
         toggle.setOnCheckedChangeListener { _, isChecked ->
@@ -128,13 +129,19 @@ class SettingsFragment : Fragment(),
             prefs.edit().putInt(FileCopyWorker.PREF_COPY_MODE, modeValue).apply()
         }
 
-        intervalButton.setOnClickListener {
-            val current = prefs.getInt(FileCopyWorker.PREF_INTERVAL_MINUTES, 720)
-            showDurationDialog("Interval", current) {
-                intervalText.text = formatDuration(it)
-                prefs.edit().putInt(FileCopyWorker.PREF_INTERVAL_MINUTES, it).apply()
+        intervalSeek.max = 4320
+        intervalSeek.min = 1
+        intervalSeek.progress = interval / 10
+        intervalText.text = formatInterval(interval)
+        intervalSeek.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                val minutes = progress * 10
+                intervalText.text = formatInterval(minutes)
+                prefs.edit().putInt(FileCopyWorker.PREF_INTERVAL_MINUTES, minutes).apply()
             }
-        }
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
 
         ageButton.setOnClickListener {
             val current = prefs.getInt(FileCopyWorker.PREF_MAX_AGE_MINUTES, 24 * 60)
@@ -186,7 +193,7 @@ class SettingsFragment : Fragment(),
         aliasEdit.isEnabled = !running
         ageButton.isEnabled = !running
         modeGroup.isEnabled = !running
-        intervalButton.isEnabled = !running
+        intervalSeek.isEnabled = !running
         toggle.isEnabled = !running
         stop.isEnabled = !running
         checkPerms.isEnabled = !running
@@ -212,6 +219,15 @@ class SettingsFragment : Fragment(),
         if (hours > 0) parts.add("${hours}h")
         if (m > 0 || parts.isEmpty()) parts.add("${m}m")
         return parts.joinToString(" ")
+    }
+
+    private fun formatInterval(minutes: Int): String {
+        return if (minutes % 60 == 0) {
+            val h = minutes / 60
+            "$h h"
+        } else {
+            "$minutes min"
+        }
     }
 
     private fun ensurePermissions(request: Boolean = false): String {
