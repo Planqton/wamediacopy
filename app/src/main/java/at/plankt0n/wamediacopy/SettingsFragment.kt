@@ -387,20 +387,26 @@ class SettingsFragment : Fragment(),
     }
 
     private fun minutesToSlider(minutes: Int): Float {
-        val min = 10f
+        val min = 1f
         val max = 43200f
         val minLog = ln(min)
         val maxLog = ln(max)
-        return ((ln(minutes.toFloat()) - minLog) / (maxLog - minLog))
+        return (ln(minutes.coerceIn(min.toInt(), max.toInt()).toFloat()) - minLog) /
+            (maxLog - minLog)
     }
 
     private fun sliderToMinutes(value: Float): Int {
-        val min = 10f
+        val min = 1f
         val max = 43200f
         val minLog = ln(min)
         val maxLog = ln(max)
-        val minutes = exp(minLog + value * (maxLog - minLog))
-        return ((minutes / 10).roundToInt() * 10).coerceIn(min.toInt(), max.toInt())
+        val minutes = exp(minLog + value.coerceIn(0f, 1f) * (maxLog - minLog))
+        val step = when {
+            minutes < 60 -> 1      // < 1h -> 1 min steps
+            minutes < 1440 -> 5    // < 1d -> 5 min steps
+            else -> 60             // >=1d -> 1 h steps
+        }
+        return ((minutes / step).roundToInt() * step).toInt().coerceIn(min.toInt(), max.toInt())
     }
 
 
