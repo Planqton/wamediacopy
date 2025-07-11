@@ -9,6 +9,7 @@ import android.widget.ListView
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import android.text.format.DateFormat
+import java.io.File
 
 class ReportsFragment : Fragment() {
 
@@ -32,17 +33,14 @@ class ReportsFragment : Fragment() {
         reportList.setOnItemClickListener { _, _, position, _ ->
             val rep = reports[position]
             val ts = DateFormat.format("yyyy-MM-dd HH:mm", rep.timestamp)
-            val msg = buildString {
-                append("Copied Files:\n")
-                rep.copied.forEach { append("- $it\n") }
-                append("\nToo Old:\n")
-                rep.old.forEach { append("- $it\n") }
-                append("\nBlacklisted Files:\n")
-                rep.blacklisted.forEach { append("- $it\n") }
+            val text = try {
+                File(rep.file).readText()
+            } catch (e: Exception) {
+                "Failed to read log"
             }
             AlertDialog.Builder(requireContext())
                 .setTitle(ts)
-                .setMessage(msg)
+                .setMessage(text)
                 .setPositiveButton(android.R.string.ok, null)
                 .show()
         }
@@ -62,6 +60,6 @@ class ReportsFragment : Fragment() {
 
     private fun summary(r: ReportStore.CopyReport): String {
         val ts = DateFormat.format("yyyy-MM-dd HH:mm", r.timestamp)
-        return "$ts - Copied:${r.copied.size} - Too Old:${r.old.size} - Blacklisted:${r.blacklisted.size}"
+        return "$ts - Copied:${r.copied} - Too Old:${r.old} - Blacklisted:${r.skipped}"
     }
 }

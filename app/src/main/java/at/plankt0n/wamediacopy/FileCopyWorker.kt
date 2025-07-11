@@ -227,13 +227,34 @@ class FileCopyWorker(
             val summary = "Copied:$newCount - Too Old:$oldSkipped - Skipped:$alreadySkipped"
             StatusNotifier.showResult(applicationContext, newCount, oldSkipped, alreadySkipped)
             AppLog.add(applicationContext, summary)
+
+            val dir = applicationContext.getExternalFilesDir("reports")
+            dir?.mkdirs()
+            val tsName = DateFormat.format("yyyyMMdd_HHmmss", now)
+            val file = java.io.File(dir, "copy_$tsName.txt")
+            try {
+                file.bufferedWriter().use { w ->
+                    w.appendLine("Copied Files:")
+                    copiedNames.forEach { w.appendLine(it) }
+                    w.appendLine()
+                    w.appendLine("Skipped Files: Too Old:")
+                    oldNames.forEach { w.appendLine(it) }
+                    w.appendLine()
+                    w.appendLine("Blacklisted Files:")
+                    skippedNames.forEach { w.appendLine(it) }
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "Failed to write report", e)
+            }
+
             ReportStore.add(
                 applicationContext,
                 ReportStore.CopyReport(
                     now,
-                    copiedNames,
-                    oldNames,
-                    skippedNames,
+                    file.absolutePath,
+                    copiedNames.size,
+                    oldNames.size,
+                    skippedNames.size,
                 )
             )
 
