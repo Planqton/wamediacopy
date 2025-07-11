@@ -27,6 +27,7 @@ import androidx.work.workDataOf
 import androidx.work.WorkManager
 import at.plankt0n.wamediacopy.AppLog
 import at.plankt0n.wamediacopy.StatusNotifier
+import at.plankt0n.wamediacopy.CopyService
 import java.util.concurrent.TimeUnit
 
 class SettingsFragment : Fragment() {
@@ -237,6 +238,10 @@ class SettingsFragment : Fragment() {
         val request = PeriodicWorkRequestBuilder<FileCopyWorker>(period, TimeUnit.MINUTES).build()
         manager.enqueueUniquePeriodicWork(WORK_NAME, ExistingPeriodicWorkPolicy.UPDATE, request)
         StatusNotifier.show(requireContext(), false)
+        ContextCompat.startForegroundService(
+            requireContext(),
+            Intent(requireContext(), CopyService::class.java)
+        )
     }
 
     private fun scheduleOnce() {
@@ -260,6 +265,10 @@ class SettingsFragment : Fragment() {
         Log.d(TAG, "cancelWork")
         manager.cancelUniqueWork(WORK_NAME)
         StatusNotifier.hide(requireContext())
+        ContextCompat.startForegroundService(
+            requireContext(),
+            Intent(requireContext(), CopyService::class.java).apply { action = CopyService.ACTION_STOP }
+        )
     }
 
     override fun onRequestPermissionsResult(

@@ -7,6 +7,7 @@ import android.preference.PreferenceManager
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import androidx.core.content.ContextCompat
 import at.plankt0n.wamediacopy.CopyService
 import java.util.concurrent.TimeUnit
 
@@ -26,7 +27,7 @@ class BootReceiver : BroadcastReceiver() {
                     request
                 )
                 val svc = Intent(context, CopyService::class.java)
-                context.startForegroundService(svc)
+                ContextCompat.startForegroundService(context, svc)
             }
         }
     }
