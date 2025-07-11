@@ -63,12 +63,14 @@ class FileCopyWorker(
         var processed = 0L
         var newestOldName: String? = null
         var newestOldTime = 0L
+        var stop = false
 
         prefs.edit()
             .putLong(PREF_PROCESSED, 0L)
             .putLong(PREF_COUNT_COPIED, 0L)
             .putLong(PREF_COUNT_OLD, 0L)
             .putLong(PREF_COUNT_SKIPPED, 0L)
+            .putBoolean(PREF_STOP_REQUESTED, false)
             .apply()
         setForeground(createForegroundInfo(0L))
         val manual = inputData.getBoolean(KEY_MANUAL, false)
@@ -115,6 +117,10 @@ class FileCopyWorker(
 
         suspend fun traverse(dir: DocumentFile) {
             for (doc in dir.listFiles()) {
+                if (prefs.getBoolean(PREF_STOP_REQUESTED, false)) {
+                    stop = true
+                    return
+                }
                 if (doc.isDirectory) {
                     traverse(doc)
                 } else if (doc.isFile) {
@@ -182,12 +188,24 @@ class FileCopyWorker(
 
         try {
             for (src in sources) {
+                if (prefs.getBoolean(PREF_STOP_REQUESTED, false)) {
+                    stop = true
+                    break
+                }
                 Log.d(TAG, "Processing source $src")
                 AppLog.add(applicationContext, "Processing source $src")
                 val sDir = DocumentFile.fromTreeUri(applicationContext, Uri.parse(src))
                 if (sDir != null && sDir.isDirectory) {
                     traverse(sDir)
+                    if (stop) break
                 }
+            }
+
+            if (stop) {
+                Log.d(TAG, "Copy stopped by user")
+                AppLog.add(applicationContext, "Copy stopped by user")
+                StatusNotifier.hideService(applicationContext)
+                return@withContext Result.success()
             }
 
             val now = System.currentTimeMillis()
@@ -217,6 +235,7 @@ class FileCopyWorker(
                 .remove(PREF_COUNT_COPIED)
                 .remove(PREF_COUNT_OLD)
                 .remove(PREF_COUNT_SKIPPED)
+                .putBoolean(PREF_STOP_REQUESTED, false)
                 .apply()
         }
     }
@@ -248,6 +267,7 @@ class FileCopyWorker(
         const val PREF_COUNT_OLD = "countOld"
         const val PREF_COUNT_SKIPPED = "countSkipped"
         const val PREF_REQUIRE_MANUAL_FIRST = "requireManual"
+        const val PREF_STOP_REQUESTED = "stopRequested"
         const val KEY_MANUAL = "manual"
         const val CHANNEL_ID = "copy_status"
         const val FOREGROUND_ID = 100

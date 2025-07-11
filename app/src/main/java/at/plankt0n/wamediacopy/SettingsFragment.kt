@@ -106,9 +106,8 @@ class SettingsFragment : Fragment(),
         }
         stop.setOnClickListener {
             Log.d(TAG, "stop pressed")
-            AppLog.add(requireContext(), "Periodic copy stopped")
-            cancelWork()
-            toggle.isChecked = false
+            AppLog.add(requireContext(), "Stop requested")
+            prefs.edit().putBoolean(FileCopyWorker.PREF_STOP_REQUESTED, true).apply()
         }
         checkPerms.setOnClickListener {
             permStatus.text = ensurePermissions(true)
@@ -191,7 +190,7 @@ class SettingsFragment : Fragment(),
         modeGroup.isEnabled = !running
         intervalButton.isEnabled = !running
         toggle.isEnabled = !running
-        stop.isEnabled = !running
+        stop.isEnabled = running
         checkPerms.isEnabled = !running
 
         val base = "$lastLabel\n$nextLabel"
