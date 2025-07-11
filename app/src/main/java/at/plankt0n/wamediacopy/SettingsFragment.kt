@@ -160,6 +160,7 @@ class SettingsFragment : Fragment(),
     override fun onResume() {
         super.onResume()
         prefs.registerOnSharedPreferenceChangeListener(this)
+        syncRunningState()
         refreshLastCopy(prefs)
         permStatus.text = ensurePermissions()
     }
@@ -254,7 +255,9 @@ class SettingsFragment : Fragment(),
             prefs.edit().putBoolean(FileCopyWorker.PREF_REQUIRE_MANUAL_FIRST, true).apply()
         }
         val period = if (minutes < 15) 15L else minutes.toLong()
-        val request = PeriodicWorkRequestBuilder<FileCopyWorker>(period, TimeUnit.MINUTES).build()
+        val request = PeriodicWorkRequestBuilder<FileCopyWorker>(period, TimeUnit.MINUTES)
+            .addTag(FileCopyWorker.TAG)
+            .build()
         manager.enqueueUniquePeriodicWork(WORK_NAME, ExistingPeriodicWorkPolicy.UPDATE, request)
         val next = System.currentTimeMillis() + minutes * 60_000L
         prefs.edit()
@@ -279,7 +282,9 @@ class SettingsFragment : Fragment(),
             val minutes = prefs.getInt(FileCopyWorker.PREF_INTERVAL_MINUTES, 720)
             val period = if (minutes < 15) 15L else minutes.toLong()
             val requestPeriodic =
-                PeriodicWorkRequestBuilder<FileCopyWorker>(period, TimeUnit.MINUTES).build()
+                PeriodicWorkRequestBuilder<FileCopyWorker>(period, TimeUnit.MINUTES)
+                    .addTag(FileCopyWorker.TAG)
+                    .build()
             manager.enqueueUniquePeriodicWork(
                 WORK_NAME,
                 ExistingPeriodicWorkPolicy.UPDATE,
@@ -291,6 +296,7 @@ class SettingsFragment : Fragment(),
         prefs.edit().putLong(FileCopyWorker.PREF_PROCESSED, 0L).apply()
         val request = OneTimeWorkRequestBuilder<FileCopyWorker>()
             .setInputData(androidx.work.workDataOf(FileCopyWorker.KEY_MANUAL to true))
+            .addTag(FileCopyWorker.TAG)
             .build()
         manager.enqueue(request)
         refreshLastCopy(prefs)
@@ -328,6 +334,18 @@ class SettingsFragment : Fragment(),
             key == FileCopyWorker.PREF_LAST_COPY ||
             key == FileCopyWorker.PREF_NEXT_COPY) {
             refreshLastCopy(prefs)
+        }
+    }
+
+    private fun syncRunningState() {
+        try {
+            val infos = manager.getWorkInfosByTag(FileCopyWorker.TAG).get()
+            val running = infos.any { it.state == androidx.work.WorkInfo.State.RUNNING }
+            val current = prefs.getBoolean(FileCopyWorker.PREF_IS_RUNNING, false)
+            if (running != current) {
+                prefs.edit().putBoolean(FileCopyWorker.PREF_IS_RUNNING, running).apply()
+            }
+        } catch (_: Exception) {
         }
     }
 
