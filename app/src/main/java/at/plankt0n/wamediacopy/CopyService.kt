@@ -14,8 +14,8 @@ class CopyService : Service() {
     private val handler = Handler(Looper.getMainLooper())
     private val updateRunnable = object : Runnable {
         override fun run() {
-            StatusNotifier.show(this@CopyService, false)
-            handler.postDelayed(this, 60_000)
+            StatusNotifier.showService(this@CopyService)
+            handler.postDelayed(this, 1000)
         }
     }
 
@@ -37,7 +37,7 @@ class CopyService : Service() {
 
     override fun onDestroy() {
         handler.removeCallbacks(updateRunnable)
-        StatusNotifier.hide(this)
+        StatusNotifier.hideService(this)
         super.onDestroy()
     }
 
@@ -61,7 +61,7 @@ class CopyService : Service() {
             android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
         else 0
         startForeground(FOREGROUND_ID, notif, type)
-        StatusNotifier.show(this, false)
+        StatusNotifier.showService(this)
     }
 
     companion object {

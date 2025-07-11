@@ -58,6 +58,7 @@ class FileCopyWorker(
         var newCount = 0
         var oldSkipped = 0
         var alreadySkipped = 0
+        var processed = 0
 
         setForeground(createForegroundInfo())
         val manual = inputData.getBoolean(KEY_MANUAL, false)
@@ -77,7 +78,7 @@ class FileCopyWorker(
                 return@withContext Result.success()
             }
         }
-        StatusNotifier.show(applicationContext, true)
+        StatusNotifier.showService(applicationContext, 0)
 
         if (destUri.isNullOrBlank()) {
             Log.d(TAG, "No destination set")
@@ -102,6 +103,8 @@ class FileCopyWorker(
                 if (doc.isDirectory) {
                     traverse(doc)
                 } else if (doc.isFile) {
+                    processed++
+                    StatusNotifier.showService(applicationContext, processed)
                     if (doc.lastModified() >= cutoff) {
                         val key = doc.uri.toString()
                         if (!copied.contains(key)) {
@@ -153,12 +156,7 @@ class FileCopyWorker(
                 .apply()
 
             val summary = "Copied $newCount, old $oldSkipped, already $alreadySkipped"
-            val notif = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
-                .setSmallIcon(android.R.drawable.stat_sys_upload_done)
-                .setContentTitle("Copy finished")
-                .setContentText(summary)
-                .build()
-            NotificationManagerCompat.from(applicationContext).notify(2, notif)
+            StatusNotifier.showResult(applicationContext, newCount, oldSkipped, alreadySkipped)
             AppLog.add(applicationContext, summary)
             AppLog.add(applicationContext, "Waiting for next interval")
 
@@ -167,7 +165,7 @@ class FileCopyWorker(
             return@withContext Result.success()
         } finally {
             prefs.edit().putBoolean(PREF_IS_RUNNING, false).apply()
-            StatusNotifier.show(applicationContext, false)
+            StatusNotifier.showService(applicationContext)
         }
     }
 

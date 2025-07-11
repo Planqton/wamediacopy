@@ -238,7 +238,7 @@ class SettingsFragment : Fragment() {
         val request = PeriodicWorkRequestBuilder<FileCopyWorker>(period, TimeUnit.MINUTES).build()
         manager.enqueueUniquePeriodicWork(WORK_NAME, ExistingPeriodicWorkPolicy.UPDATE, request)
         prefs.edit().putBoolean(FileCopyWorker.PREF_IS_RUNNING, false).apply()
-        StatusNotifier.show(requireContext(), false)
+        StatusNotifier.showService(requireContext())
         ContextCompat.startForegroundService(
             requireContext(),
             Intent(requireContext(), CopyService::class.java)
@@ -267,7 +267,7 @@ class SettingsFragment : Fragment() {
         manager.cancelUniqueWork(WORK_NAME)
         val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
         prefs.edit().putBoolean(FileCopyWorker.PREF_IS_RUNNING, false).apply()
-        StatusNotifier.hide(requireContext())
+        StatusNotifier.hideService(requireContext())
         ContextCompat.startForegroundService(
             requireContext(),
             Intent(requireContext(), CopyService::class.java).apply { action = CopyService.ACTION_STOP }
