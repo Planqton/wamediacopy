@@ -222,7 +222,7 @@ class FileCopyWorker(
             AppLog.add(applicationContext, summary)
 
             if (intervalMin > 0) {
-                val periodMin = maxOf(intervalMin, 15)
+                val periodMin = maxOf(intervalMin, MIN_INTERVAL_MINUTES)
                 val nextScheduled = now + periodMin * 60_000L
                 prefs.edit().putLong(PREF_NEXT_COPY, nextScheduled).apply()
             }
@@ -261,6 +261,7 @@ class FileCopyWorker(
     }
 
     companion object {
+        const val MIN_INTERVAL_MINUTES = 15
         const val PREF_SOURCES = "sources"
         const val PREF_DEST = "dest"
         const val PREF_ALIAS = "alias"
