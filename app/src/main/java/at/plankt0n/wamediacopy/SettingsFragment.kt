@@ -29,6 +29,9 @@ import androidx.work.WorkManager
 import at.plankt0n.wamediacopy.AppLog
 import at.plankt0n.wamediacopy.StatusNotifier
 import java.util.concurrent.TimeUnit
+import kotlin.math.exp
+import kotlin.math.ln
+import kotlin.math.roundToInt
 
 class SettingsFragment : Fragment(),
     android.content.SharedPreferences.OnSharedPreferenceChangeListener {
@@ -360,27 +363,44 @@ class SettingsFragment : Fragment(),
         val slider = view.findViewById<Slider>(R.id.slider_duration)
         val label = view.findViewById<TextView>(R.id.text_duration)
 
-        slider.valueFrom = 10f
-        slider.valueTo = 43200f
-        slider.stepSize = 10f
-        slider.value = startMinutes.toFloat()
+        slider.valueFrom = 0f
+        slider.valueTo = 1f
+        slider.stepSize = 0f
+        slider.value = minutesToSlider(startMinutes).coerceIn(0f, 1f)
         label.text = formatDuration(startMinutes)
 
         slider.addOnChangeListener { _, value, _ ->
-            label.text = formatDuration(value.toInt())
+            label.text = formatDuration(sliderToMinutes(value))
         }
         slider.setLabelFormatter { value: Float ->
-            formatDuration(value.toInt())
+            formatDuration(sliderToMinutes(value))
         }
 
         AlertDialog.Builder(requireContext())
             .setTitle(title)
             .setView(view)
             .setPositiveButton(android.R.string.ok) { _, _ ->
-                onResult(slider.value.toInt())
+                onResult(sliderToMinutes(slider.value))
             }
             .setNegativeButton(android.R.string.cancel, null)
             .show()
+    }
+
+    private fun minutesToSlider(minutes: Int): Float {
+        val min = 10f
+        val max = 43200f
+        val minLog = ln(min)
+        val maxLog = ln(max)
+        return ((ln(minutes.toFloat()) - minLog) / (maxLog - minLog))
+    }
+
+    private fun sliderToMinutes(value: Float): Int {
+        val min = 10f
+        val max = 43200f
+        val minLog = ln(min)
+        val maxLog = ln(max)
+        val minutes = exp(minLog + value * (maxLog - minLog))
+        return ((minutes / 10).roundToInt() * 10).coerceIn(min.toInt(), max.toInt())
     }
 
 

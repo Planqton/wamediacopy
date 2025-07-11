@@ -16,9 +16,9 @@
         android:id="@+id/slider_duration"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:valueFrom="10"
-        android:valueTo="43200"
-        android:stepSize="10"
+        android:valueFrom="0"
+        android:valueTo="1"
+        android:stepSize="0"
         android:layout_marginTop="8dp" />
 
 </LinearLayout>
