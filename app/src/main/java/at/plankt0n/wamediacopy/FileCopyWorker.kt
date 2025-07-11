@@ -222,7 +222,7 @@ class FileCopyWorker(
             AppLog.add(applicationContext, summary)
 
             if (intervalMin > 0) {
-                val periodMin = maxOf(intervalMin, 3)
+                val periodMin = maxOf(intervalMin, 15)
                 val nextScheduled = now + periodMin * 60_000L
                 prefs.edit().putLong(PREF_NEXT_COPY, nextScheduled).apply()
             }
