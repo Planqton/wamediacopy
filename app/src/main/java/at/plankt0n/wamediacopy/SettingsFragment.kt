@@ -14,6 +14,8 @@ import android.widget.RadioGroup
 import android.widget.SeekBar
 import android.widget.Switch
 import android.widget.TextView
+import android.os.PowerManager
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
@@ -34,6 +36,8 @@ class SettingsFragment : Fragment() {
     private lateinit var toggle: Switch
     private lateinit var manual: Button
     private lateinit var stop: Button
+    private lateinit var checkPerms: Button
+    private lateinit var permStatus: TextView
     private lateinit var lastCopyText: TextView
 
     private val manager by lazy { WorkManager.getInstance(requireContext()) }
@@ -59,6 +63,8 @@ class SettingsFragment : Fragment() {
         toggle = view.findViewById(R.id.switch_run)
         manual = view.findViewById(R.id.button_manual)
         stop = view.findViewById(R.id.button_stop)
+        checkPerms = view.findViewById(R.id.button_check_perms)
+        permStatus = view.findViewById(R.id.text_perm_status)
         lastCopyText = view.findViewById(R.id.text_last_copy)
 
         val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
@@ -97,6 +103,9 @@ class SettingsFragment : Fragment() {
             AppLog.add(requireContext(), "Periodic copy stopped")
             cancelWork()
             toggle.isChecked = false
+        }
+        checkPerms.setOnClickListener {
+            permStatus.text = ensurePermissions()
         }
 
         val watcher = object : TextWatcher {
@@ -174,11 +183,43 @@ class SettingsFragment : Fragment() {
         }
     }
 
+    private fun ensurePermissions(): String {
+        val missing = mutableListOf<String>()
+        val ctx = requireContext()
+        val storagePerms = arrayOf(
+            android.Manifest.permission.READ_EXTERNAL_STORAGE,
+            android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            android.Manifest.permission.POST_NOTIFICATIONS
+        )
+        val needReq = storagePerms.filter {
+            androidx.core.content.ContextCompat.checkSelfPermission(ctx, it) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        }
+        if (needReq.isNotEmpty()) {
+            requestPermissions(needReq.toTypedArray(), REQ_PERMS)
+            missing.addAll(needReq.map { it.substringAfterLast('.') })
+        }
+        val pm = ctx.getSystemService(android.os.PowerManager::class.java)
+        if (!pm.isIgnoringBatteryOptimizations(ctx.packageName)) {
+            missing.add("Battery optimizations")
+        }
+        val hasBoot = ctx.packageManager.checkPermission(
+            android.Manifest.permission.RECEIVE_BOOT_COMPLETED,
+            ctx.packageName
+        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        if (!hasBoot) missing.add("Boot")
+        return if (missing.isEmpty()) {
+            "All permissions granted"
+        } else {
+            "Missing: ${missing.joinToString(", ")}"
+        }
+    }
+
     private fun scheduleWork() {
         Log.d(TAG, "scheduleWork")
         val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
         val minutes = prefs.getInt(FileCopyWorker.PREF_INTERVAL_MINUTES, 720)
-        val request = PeriodicWorkRequestBuilder<FileCopyWorker>(minutes.toLong(), TimeUnit.MINUTES).build()
+        val period = if (minutes < 15) 15L else minutes.toLong()
+        val request = PeriodicWorkRequestBuilder<FileCopyWorker>(period, TimeUnit.MINUTES).build()
         manager.enqueueUniquePeriodicWork(WORK_NAME, ExistingPeriodicWorkPolicy.UPDATE, request)
         StatusNotifier.show(requireContext(), false)
     }
@@ -208,5 +249,6 @@ class SettingsFragment : Fragment() {
         const val PREF_ENABLED = "enabled"
         const val CHANNEL_ID = "copy_status"
         const val TAG = "SettingsFrag"
+        private const val REQ_PERMS = 5678
     }
 }

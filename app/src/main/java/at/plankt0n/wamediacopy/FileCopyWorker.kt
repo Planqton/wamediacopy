@@ -51,6 +51,7 @@ class FileCopyWorker(
         val maxAgeHours = prefs.getInt(PREF_MAX_AGE_HOURS, 24)
         val copyMode = prefs.getInt(PREF_COPY_MODE, 0)
         val lastCopy = prefs.getLong(PREF_LAST_COPY, 0L)
+        val intervalMin = prefs.getInt(PREF_INTERVAL_MINUTES, 0)
         val alias = prefs.getString(PREF_ALIAS, "") ?: ""
         val copied = prefs.getStringSet(PREF_COPIED, mutableSetOf())?.toMutableSet() ?: mutableSetOf()
         var newCount = 0
@@ -58,6 +59,13 @@ class FileCopyWorker(
         var alreadySkipped = 0
 
         setForeground(createForegroundInfo())
+        if (intervalMin > 0 && lastCopy != 0L) {
+            val elapsed = System.currentTimeMillis() - lastCopy
+            if (elapsed < intervalMin * 60_000L) {
+                Log.d(TAG, "Not due yet")
+                return@withContext Result.success()
+            }
+        }
         StatusNotifier.show(applicationContext, true)
 
         if (destUri.isNullOrBlank()) {
