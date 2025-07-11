@@ -45,6 +45,7 @@ class SettingsFragment : Fragment(),
     private lateinit var toggle: Switch
     private lateinit var manual: Button
     private lateinit var stop: Button
+    private lateinit var modeLast: android.widget.RadioButton
     private lateinit var checkPerms: Button
     private lateinit var permStatus: TextView
     private lateinit var lastCopyText: TextView
@@ -68,6 +69,7 @@ class SettingsFragment : Fragment(),
         ageButton = view.findViewById(R.id.button_age)
         ageText = view.findViewById(R.id.text_age)
         modeGroup = view.findViewById(R.id.radio_mode)
+        modeLast = view.findViewById(R.id.radio_mode_last)
         intervalButton = view.findViewById(R.id.button_interval)
         intervalText = view.findViewById(R.id.text_interval)
         toggle = view.findViewById(R.id.switch_run)
@@ -203,15 +205,20 @@ class SettingsFragment : Fragment(),
 
     private fun refreshAge() {
         val mode = prefs.getInt(FileCopyWorker.PREF_COPY_MODE, 0)
+        val last = prefs.getLong(FileCopyWorker.PREF_LAST_COPY, 0L)
+        val diff = if (last == 0L) null else ((System.currentTimeMillis() - last) / 60_000).toInt()
+        modeLast.text = if (diff == null) {
+            "Since last copy -"
+        } else {
+            "Since last copy (${formatDuration(diff)})"
+        }
         if (mode == 0) {
             val ageMinutes = prefs.getInt(FileCopyWorker.PREF_MAX_AGE_MINUTES, 24 * 60)
             ageText.text = formatDuration(ageMinutes)
         } else {
-            val last = prefs.getLong(FileCopyWorker.PREF_LAST_COPY, 0L)
-            if (last == 0L) {
+            if (diff == null) {
                 ageText.text = "-"
             } else {
-                val diff = ((System.currentTimeMillis() - last) / 60_000).toInt()
                 ageText.text = formatDuration(diff)
                 prefs.edit().putInt(FileCopyWorker.PREF_MAX_AGE_MINUTES, diff).apply()
             }
