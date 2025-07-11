@@ -63,7 +63,7 @@
                 android:layout_weight="1"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:max="24"
+                android:max="144"
                 android:min="1" />
             <TextView
                 android:id="@+id/text_interval"

@@ -13,6 +13,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
 import at.plankt0n.wamediacopy.AppLog
+import at.plankt0n.wamediacopy.StatusNotifier
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -57,6 +58,7 @@ class FileCopyWorker(
         var alreadySkipped = 0
 
         setForeground(createForegroundInfo())
+        StatusNotifier.show(applicationContext, true)
 
         if (destUri.isNullOrBlank()) {
             Log.d(TAG, "No destination set")
@@ -146,6 +148,7 @@ class FileCopyWorker(
             return@withContext Result.success()
         } finally {
             prefs.edit().putBoolean(PREF_IS_RUNNING, false).apply()
+            StatusNotifier.show(applicationContext, false)
         }
     }
 
@@ -157,7 +160,7 @@ class FileCopyWorker(
         const val PREF_COPIED = "copiedFiles"
         const val PREF_LAST_COPY = "lastCopy"
         const val PREF_COPY_MODE = "copyMode"
-        const val PREF_INTERVAL_HOURS = "intervalH"
+        const val PREF_INTERVAL_MINUTES = "intervalM"
         const val PREF_IS_RUNNING = "copyRunning"
         const val CHANNEL_ID = "copy_status"
         const val FOREGROUND_ID = 100

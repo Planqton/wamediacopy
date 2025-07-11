@@ -1,7 +1,5 @@
 package at.plankt0n.wamediacopy
 
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.os.Bundle
 import android.preference.PreferenceManager
 import android.text.Editable
@@ -16,14 +14,13 @@ import android.widget.RadioGroup
 import android.widget.SeekBar
 import android.widget.Switch
 import android.widget.TextView
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import androidx.fragment.app.Fragment
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import at.plankt0n.wamediacopy.AppLog
+import at.plankt0n.wamediacopy.StatusNotifier
 import java.util.concurrent.TimeUnit
 
 class SettingsFragment : Fragment() {
@@ -40,26 +37,6 @@ class SettingsFragment : Fragment() {
     private lateinit var lastCopyText: TextView
 
     private val manager by lazy { WorkManager.getInstance(requireContext()) }
-    private val notifId = 1
-
-    private fun showStatusNotification() {
-        Log.d(TAG, "showStatusNotification")
-        val channel = NotificationChannel(CHANNEL_ID, "Copy status", NotificationManager.IMPORTANCE_LOW)
-        val nm = requireContext().getSystemService(NotificationManager::class.java)
-        nm.createNotificationChannel(channel)
-        val notif = NotificationCompat.Builder(requireContext(), CHANNEL_ID)
-            .setContentTitle("Background copy running")
-            .setContentText("Files sync every 30 minutes")
-            .setSmallIcon(android.R.drawable.stat_notify_sync)
-            .setOngoing(true)
-            .build()
-        NotificationManagerCompat.from(requireContext()).notify(notifId, notif)
-    }
-
-    private fun hideStatusNotification() {
-        Log.d(TAG, "hideStatusNotification")
-        NotificationManagerCompat.from(requireContext()).cancel(notifId)
-    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -92,9 +69,10 @@ class SettingsFragment : Fragment() {
         ageText.text = "$days Tag" + if (days == 1) "" else "e"
         val mode = prefs.getInt(FileCopyWorker.PREF_COPY_MODE, 0)
         modeGroup.check(if (mode == 0) R.id.radio_mode_age else R.id.radio_mode_last)
-        val interval = prefs.getInt(FileCopyWorker.PREF_INTERVAL_HOURS, 12)
-        intervalSeek.progress = interval
-        intervalText.text = "$interval h"
+        val interval = prefs.getInt(FileCopyWorker.PREF_INTERVAL_MINUTES, 720)
+        intervalSeek.max = 144
+        intervalSeek.progress = interval / 10
+        intervalText.text = formatInterval(interval)
         toggle.isChecked = prefs.getBoolean(PREF_ENABLED, false)
 
         toggle.setOnCheckedChangeListener { _, isChecked ->
@@ -140,9 +118,9 @@ class SettingsFragment : Fragment() {
 
         intervalSeek.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                val label = "$progress h"
-                intervalText.text = label
-                prefs.edit().putInt(FileCopyWorker.PREF_INTERVAL_HOURS, progress).apply()
+                val minutes = progress * 10
+                intervalText.text = formatInterval(minutes)
+                prefs.edit().putInt(FileCopyWorker.PREF_INTERVAL_MINUTES, minutes).apply()
             }
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
@@ -187,13 +165,22 @@ class SettingsFragment : Fragment() {
         }
     }
 
+    private fun formatInterval(minutes: Int): String {
+        return if (minutes % 60 == 0) {
+            val h = minutes / 60
+            "$h h"
+        } else {
+            "$minutes min"
+        }
+    }
+
     private fun scheduleWork() {
         Log.d(TAG, "scheduleWork")
         val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
-        val hours = prefs.getInt(FileCopyWorker.PREF_INTERVAL_HOURS, 12)
-        val request = PeriodicWorkRequestBuilder<FileCopyWorker>(hours.toLong(), TimeUnit.HOURS).build()
+        val minutes = prefs.getInt(FileCopyWorker.PREF_INTERVAL_MINUTES, 720)
+        val request = PeriodicWorkRequestBuilder<FileCopyWorker>(minutes.toLong(), TimeUnit.MINUTES).build()
         manager.enqueueUniquePeriodicWork(WORK_NAME, ExistingPeriodicWorkPolicy.UPDATE, request)
-        showStatusNotification()
+        StatusNotifier.show(requireContext(), false)
     }
 
     private fun scheduleOnce() {
@@ -212,7 +199,7 @@ class SettingsFragment : Fragment() {
     private fun cancelWork() {
         Log.d(TAG, "cancelWork")
         manager.cancelUniqueWork(WORK_NAME)
-        hideStatusNotification()
+        StatusNotifier.hide(requireContext())
     }
 
 
