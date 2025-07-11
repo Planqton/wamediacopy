@@ -8,43 +8,10 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
-        <LinearLayout
-            android:id="@+id/layout_sources"
-            android:orientation="vertical"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-
-        <Button
-            android:id="@+id/button_add_source"
-            android:text="Add source folder"
-            android:layout_marginTop="4dp"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
-
-        <LinearLayout
-            android:orientation="horizontal"
-            android:layout_marginTop="8dp"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-            <EditText
-                android:id="@+id/edit_dest"
-                android:hint="Destination path"
-                android:inputType="textUri"
-                android:layout_weight="1"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content" />
-            <Button
-                android:id="@+id/button_pick_dest"
-                android:text="Choose"
-                android:layout_marginStart="4dp"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
-        </LinearLayout>
 
         <EditText
             android:id="@+id/edit_alias"
             android:hint="Filename prefix"
-            android:layout_marginTop="8dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
@@ -67,6 +34,45 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content" />
         </LinearLayout>
+
+        <RadioGroup
+            android:id="@+id/radio_mode"
+            android:orientation="vertical"
+            android:layout_marginTop="8dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <RadioButton
+                android:id="@+id/radio_mode_age"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="By age" />
+            <RadioButton
+                android:id="@+id/radio_mode_last"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Since last copy" />
+        </RadioGroup>
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:layout_marginTop="8dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+            <SeekBar
+                android:id="@+id/seek_interval"
+                android:layout_weight="1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:max="24"
+                android:min="1" />
+            <TextView
+                android:id="@+id/text_interval"
+                android:layout_marginStart="8dp"
+                android:text="12 h"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
 
         <Switch
             android:id="@+id/switch_run"

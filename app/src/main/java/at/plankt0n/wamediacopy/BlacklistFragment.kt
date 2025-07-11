@@ -12,7 +12,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 
-class CopiedListFragment : Fragment() {
+class BlacklistFragment : Fragment() {
 
     private lateinit var listLayout: LinearLayout
     private lateinit var clearButton: Button
@@ -23,7 +23,7 @@ class CopiedListFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        return inflater.inflate(R.layout.fragment_copied_list, container, false)
+        return inflater.inflate(R.layout.fragment_blacklist, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -66,6 +66,6 @@ class CopiedListFragment : Fragment() {
     }
 
     companion object {
-        const val TAG = "CopiedListFrag"
+        const val TAG = "BlacklistFrag"
     }
 }

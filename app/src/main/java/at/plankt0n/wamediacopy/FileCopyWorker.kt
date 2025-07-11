@@ -41,6 +41,8 @@ class FileCopyWorker(
         val sources = prefs.getStringSet(PREF_SOURCES, emptySet()) ?: emptySet()
         val destUri = prefs.getString(PREF_DEST, null)
         val maxAgeHours = prefs.getInt(PREF_MAX_AGE_HOURS, 24)
+        val copyMode = prefs.getInt(PREF_COPY_MODE, 0)
+        val lastCopy = prefs.getLong(PREF_LAST_COPY, 0L)
         val alias = prefs.getString(PREF_ALIAS, "") ?: ""
         val copied = prefs.getStringSet(PREF_COPIED, mutableSetOf())?.toMutableSet() ?: mutableSetOf()
         var newCount = 0
@@ -56,7 +58,11 @@ class FileCopyWorker(
         val destDir = DocumentFile.fromTreeUri(applicationContext, Uri.parse(destUri))
             ?: return@withContext Result.failure()
 
-        val cutoff = System.currentTimeMillis() - maxAgeHours * 3600_000L
+        val cutoff = if (copyMode == 0) {
+            System.currentTimeMillis() - maxAgeHours * 3600_000L
+        } else {
+            lastCopy
+        }
 
         fun traverse(dir: DocumentFile) {
             for (doc in dir.listFiles()) {
@@ -106,7 +112,10 @@ class FileCopyWorker(
             }
         }
 
-        prefs.edit().putStringSet(PREF_COPIED, copied).apply()
+        prefs.edit()
+            .putStringSet(PREF_COPIED, copied)
+            .putLong(PREF_LAST_COPY, System.currentTimeMillis())
+            .apply()
 
         val summary = "Copied $newCount, old $oldSkipped, already $alreadySkipped"
         val notif = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
@@ -127,6 +136,9 @@ class FileCopyWorker(
         const val PREF_ALIAS = "alias"
         const val PREF_MAX_AGE_HOURS = "maxAgeH"
         const val PREF_COPIED = "copiedFiles"
+        const val PREF_LAST_COPY = "lastCopy"
+        const val PREF_COPY_MODE = "copyMode"
+        const val PREF_INTERVAL_HOURS = "intervalH"
         const val CHANNEL_ID = "copy_status"
         const val FOREGROUND_ID = 100
         const val TAG = "FileCopyWorker"

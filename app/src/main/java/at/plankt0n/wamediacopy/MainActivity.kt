@@ -3,10 +3,13 @@ package at.plankt0n.wamediacopy
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.widget.Button
+import com.google.android.material.bottomnavigation.BottomNavigationView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+
+import at.plankt0n.wamediacopy.FoldersFragment
+import at.plankt0n.wamediacopy.BlacklistFragment
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -15,21 +18,23 @@ class MainActivity : AppCompatActivity() {
 
         checkPermissions()
 
+        val nav = findViewById<BottomNavigationView>(R.id.bottom_nav)
+        nav.setOnItemSelectedListener { item ->
+            val fragment = when (item.itemId) {
+                R.id.nav_settings -> SettingsFragment()
+                R.id.nav_folders -> FoldersFragment()
+                R.id.nav_blacklist -> BlacklistFragment()
+                else -> null
+            }
+            fragment?.let {
+                supportFragmentManager.beginTransaction()
+                    .replace(R.id.fragment_container, it)
+                    .commit()
+                true
+            } ?: false
+        }
         if (savedInstanceState == null) {
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, SettingsFragment())
-                .commit()
-        }
-
-        findViewById<Button>(R.id.button_show_settings).setOnClickListener {
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, SettingsFragment())
-                .commit()
-        }
-        findViewById<Button>(R.id.button_show_copied).setOnClickListener {
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, CopiedListFragment())
-                .commit()
+            nav.selectedItemId = R.id.nav_settings
         }
     }
 
