@@ -72,7 +72,7 @@ class FileCopyWorker(
             prefs.edit().putBoolean(PREF_REQUIRE_MANUAL_FIRST, false).apply()
         }
 
-        if (intervalMin > 0 && lastCopy != 0L) {
+        if (!manual && intervalMin > 0 && lastCopy != 0L) {
             val elapsed = System.currentTimeMillis() - lastCopy
             if (elapsed < intervalMin * 60_000L) {
                 Log.d(TAG, "Not due yet")
