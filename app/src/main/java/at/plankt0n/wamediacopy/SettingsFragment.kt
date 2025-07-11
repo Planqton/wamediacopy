@@ -259,6 +259,20 @@ class SettingsFragment : Fragment() {
         prefs.edit()
             .putBoolean(FileCopyWorker.PREF_REQUIRE_MANUAL_FIRST, false)
             .apply()
+
+        if (toggle.isChecked) {
+            val minutes = prefs.getInt(FileCopyWorker.PREF_INTERVAL_MINUTES, 720)
+            val period = if (minutes < 15) 15L else minutes.toLong()
+            val requestPeriodic =
+                PeriodicWorkRequestBuilder<FileCopyWorker>(period, TimeUnit.MINUTES).build()
+            manager.enqueueUniquePeriodicWork(
+                WORK_NAME,
+                ExistingPeriodicWorkPolicy.UPDATE,
+                requestPeriodic
+            )
+            val next = System.currentTimeMillis() + minutes * 60_000L
+            prefs.edit().putLong(FileCopyWorker.PREF_NEXT_COPY, next).apply()
+        }
         val request = OneTimeWorkRequestBuilder<FileCopyWorker>()
             .setInputData(androidx.work.workDataOf(FileCopyWorker.KEY_MANUAL to true))
             .build()
