@@ -69,6 +69,8 @@ class FileCopyWorker(
             .putLong(PREF_COUNT_COPIED, 0L)
             .putLong(PREF_COUNT_OLD, 0L)
             .putLong(PREF_COUNT_SKIPPED, 0L)
+            .remove(PREF_TOTAL_FILES)
+            .remove(PREF_NEWEST_OLD_INFO)
             .apply()
         setForeground(createForegroundInfo(0L))
         val manual = inputData.getBoolean(KEY_MANUAL, false)
@@ -95,6 +97,24 @@ class FileCopyWorker(
             return@withContext Result.failure()
         }
         prefs.edit().putBoolean(PREF_IS_RUNNING, true).apply()
+
+        suspend fun countFiles(dir: DocumentFile): Long {
+            var total = 0L
+            for (f in dir.listFiles()) {
+                if (f.isDirectory) total += countFiles(f)
+                else if (f.isFile) total++
+            }
+            return total
+        }
+
+        var totalFiles = 0L
+        for (src in sources) {
+            val sDir = DocumentFile.fromTreeUri(applicationContext, Uri.parse(src))
+            if (sDir != null && sDir.isDirectory) {
+                totalFiles += countFiles(sDir)
+            }
+        }
+        prefs.edit().putLong(PREF_TOTAL_FILES, totalFiles).apply()
         val destDir = DocumentFile.fromTreeUri(applicationContext, Uri.parse(destUri))
         if (destDir == null) {
             prefs.edit().putBoolean(PREF_IS_RUNNING, false).apply()
@@ -205,6 +225,12 @@ class FileCopyWorker(
                 val tsStr = DateFormat.format("yyyy-MM-dd HH:mm:ss", newestOldTime).toString()
                 val msg = "Newest too old: $newestOldName - $age - $tsStr"
                 AppLog.add(applicationContext, msg)
+                prefs.edit().putString(PREF_NEWEST_OLD_INFO, "$newestOldName - $age - $tsStr").apply()
+            }
+
+            val showTimer = prefs.getBoolean(PREF_SHOW_TIME_LEFT, false)
+            if (showTimer && nextScheduled > now) {
+                StatusNotifier.showService(applicationContext, nextCopy = nextScheduled, showCountdown = true)
             }
 
             Log.d(TAG, "Worker finished")
@@ -217,6 +243,7 @@ class FileCopyWorker(
                 .remove(PREF_COUNT_COPIED)
                 .remove(PREF_COUNT_OLD)
                 .remove(PREF_COUNT_SKIPPED)
+                .remove(PREF_TOTAL_FILES)
                 .apply()
         }
     }
@@ -247,6 +274,9 @@ class FileCopyWorker(
         const val PREF_COUNT_COPIED = "countCopied"
         const val PREF_COUNT_OLD = "countOld"
         const val PREF_COUNT_SKIPPED = "countSkipped"
+        const val PREF_TOTAL_FILES = "totalFiles"
+        const val PREF_NEWEST_OLD_INFO = "newestOldInfo"
+        const val PREF_SHOW_TIME_LEFT = "showTimeLeft"
         const val PREF_REQUIRE_MANUAL_FIRST = "requireManual"
         const val KEY_MANUAL = "manual"
         const val CHANNEL_ID = "copy_status"

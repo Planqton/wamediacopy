@@ -11,17 +11,33 @@ object StatusNotifier {
     private const val RESULT_ID = 2
     const val CHANNEL_ID = "copy_status"
 
-    fun showService(context: Context, processed: Long? = null) {
+    fun showService(
+        context: Context,
+        processed: Long? = null,
+        nextCopy: Long? = null,
+        showCountdown: Boolean = false
+    ) {
         val channel = NotificationChannel(CHANNEL_ID, "Copy status", NotificationManager.IMPORTANCE_LOW)
         val nm = context.getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(channel)
-        val text = processed?.let { "Files Processed: $it" } ?: ""
-        val notif = NotificationCompat.Builder(context, CHANNEL_ID)
+        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setContentTitle("Whatsapp Copy")
-            .setContentText(text)
             .setSmallIcon(android.R.drawable.stat_notify_sync)
-            .setOngoing(true)
-            .build()
+
+        val text = processed?.let { "Files Processed: $it" } ?: if (showCountdown && nextCopy != null) {
+            "Next copy in"
+        } else {
+            ""
+        }
+
+        builder.setContentText(text)
+
+        if (processed == null && showCountdown && nextCopy != null) {
+            builder.setWhen(nextCopy)
+                .setUsesChronometer(true)
+                .setChronometerCountDown(true)
+        }
+        val notif = builder.setOngoing(true).build()
         NotificationManagerCompat.from(context).notify(SERVICE_ID, notif)
     }
 

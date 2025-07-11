@@ -11,6 +11,8 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
 import android.widget.RadioGroup
+import android.widget.RadioButton
+import android.widget.ProgressBar
 import android.widget.NumberPicker
 import android.widget.SeekBar
 import android.widget.Switch
@@ -38,14 +40,17 @@ class SettingsFragment : Fragment(),
     private lateinit var ageButton: Button
     private lateinit var ageText: TextView
     private lateinit var modeGroup: RadioGroup
+    private lateinit var modeLast: RadioButton
     private lateinit var intervalSeek: SeekBar
     private lateinit var intervalText: TextView
     private lateinit var toggle: Switch
+    private lateinit var countdown: Switch
     private lateinit var manual: Button
     private lateinit var stop: Button
     private lateinit var checkPerms: Button
     private lateinit var permStatus: TextView
     private lateinit var lastCopyText: TextView
+    private lateinit var progressBar: ProgressBar
     private lateinit var prefs: android.content.SharedPreferences
 
     private val manager by lazy { WorkManager.getInstance(requireContext()) }
@@ -66,14 +71,17 @@ class SettingsFragment : Fragment(),
         ageButton = view.findViewById(R.id.button_age)
         ageText = view.findViewById(R.id.text_age)
         modeGroup = view.findViewById(R.id.radio_mode)
+        modeLast = view.findViewById(R.id.radio_mode_last)
         intervalSeek = view.findViewById(R.id.seek_interval)
         intervalText = view.findViewById(R.id.text_interval)
         toggle = view.findViewById(R.id.switch_run)
+        countdown = view.findViewById(R.id.switch_countdown)
         manual = view.findViewById(R.id.button_manual)
         stop = view.findViewById(R.id.button_stop)
         checkPerms = view.findViewById(R.id.button_check_perms)
         permStatus = view.findViewById(R.id.text_perm_status)
         lastCopyText = view.findViewById(R.id.text_last_copy)
+        progressBar = view.findViewById(R.id.progress_files)
 
         prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
         aliasEdit.setText(prefs.getString(FileCopyWorker.PREF_ALIAS, ""))
@@ -84,6 +92,7 @@ class SettingsFragment : Fragment(),
         val interval = prefs.getInt(FileCopyWorker.PREF_INTERVAL_MINUTES, 720)
         intervalText.text = formatInterval(interval)
         toggle.isChecked = prefs.getBoolean(PREF_ENABLED, true)
+        countdown.isChecked = prefs.getBoolean(FileCopyWorker.PREF_SHOW_TIME_LEFT, false)
 
         toggle.setOnCheckedChangeListener { _, isChecked ->
             prefs.edit().putBoolean(PREF_ENABLED, isChecked).apply()
@@ -94,6 +103,18 @@ class SettingsFragment : Fragment(),
             } else {
                 AppLog.add(requireContext(), "Periodic copy disabled")
                 cancelWork()
+            }
+        }
+
+        countdown.setOnCheckedChangeListener { _, checked ->
+            prefs.edit().putBoolean(FileCopyWorker.PREF_SHOW_TIME_LEFT, checked).apply()
+            if (checked) {
+                val next = prefs.getLong(FileCopyWorker.PREF_NEXT_COPY, 0L)
+                if (next > System.currentTimeMillis()) {
+                    StatusNotifier.showService(requireContext(), nextCopy = next, showCountdown = true)
+                }
+            } else {
+                StatusNotifier.hideService(requireContext())
             }
         }
 
@@ -188,6 +209,15 @@ class SettingsFragment : Fragment(),
         val copied = prefs.getLong(FileCopyWorker.PREF_COUNT_COPIED, 0L)
         val skipped = prefs.getLong(FileCopyWorker.PREF_COUNT_SKIPPED, 0L)
         val old = prefs.getLong(FileCopyWorker.PREF_COUNT_OLD, 0L)
+        val newestOld = prefs.getString(FileCopyWorker.PREF_NEWEST_OLD_INFO, null)
+        val total = prefs.getLong(FileCopyWorker.PREF_TOTAL_FILES, 0L)
+
+        if (total > 0) {
+            val percent = (processed * 100 / total).toInt()
+            progressBar.progress = percent
+        } else {
+            progressBar.progress = 0
+        }
 
         manual.isEnabled = !running
         aliasEdit.isEnabled = !running
@@ -195,14 +225,23 @@ class SettingsFragment : Fragment(),
         modeGroup.isEnabled = !running
         intervalSeek.isEnabled = !running
         toggle.isEnabled = !running
+        countdown.isEnabled = !running
         stop.isEnabled = !running
         checkPerms.isEnabled = !running
 
         val base = "$lastLabel\n$nextLabel"
         val combined = if (running) {
-            "$base\nProcessed: $processed\nCopied: $copied\nSkipped: $skipped\nToo old: $old"
-        } else base
+            "$base\nProcessed: $processed\nCopied: $copied\nSkipped: $skipped\nToo old: $old" +
+                (newestOld?.let { "\nNewest too old: $it" } ?: "")
+        } else base + (newestOld?.let { "\nNewest too old: $it" } ?: "")
         lastCopyText.text = combined
+
+        if (ts != 0L) {
+            val age = System.currentTimeMillis() - ts
+            modeLast.text = "Since last copy (${formatAgo(age)})"
+        } else {
+            modeLast.text = "Since last copy"
+        }
     }
 
     private fun formatDuration(minutes: Int): String {
@@ -219,6 +258,16 @@ class SettingsFragment : Fragment(),
         if (hours > 0) parts.add("${hours}h")
         if (m > 0 || parts.isEmpty()) parts.add("${m}m")
         return parts.joinToString(" ")
+    }
+
+    private fun formatAgo(ms: Long): String {
+        var s = ms / 1000
+        val d = s / (24 * 3600)
+        s %= 24 * 3600
+        val h = s / 3600
+        s %= 3600
+        val m = s / 60
+        return String.format("%dd %02dh %02dm", d, h, m)
     }
 
     private fun formatInterval(minutes: Int): String {
@@ -284,6 +333,9 @@ class SettingsFragment : Fragment(),
             .putLong(FileCopyWorker.PREF_PROCESSED, 0L)
             .putLong(FileCopyWorker.PREF_NEXT_COPY, next)
             .apply()
+        if (countdown.isChecked) {
+            StatusNotifier.showService(requireContext(), nextCopy = next, showCountdown = true)
+        }
         refreshLastCopy(prefs)
     }
 
@@ -311,6 +363,9 @@ class SettingsFragment : Fragment(),
             )
             val next = System.currentTimeMillis() + minutes * 60_000L
             prefs.edit().putLong(FileCopyWorker.PREF_NEXT_COPY, next).apply()
+            if (countdown.isChecked) {
+                StatusNotifier.showService(requireContext(), nextCopy = next, showCountdown = true)
+            }
         }
         prefs.edit().putLong(FileCopyWorker.PREF_PROCESSED, 0L).apply()
         val request = OneTimeWorkRequestBuilder<FileCopyWorker>()
@@ -354,7 +409,9 @@ class SettingsFragment : Fragment(),
             key == FileCopyWorker.PREF_NEXT_COPY ||
             key == FileCopyWorker.PREF_COUNT_COPIED ||
             key == FileCopyWorker.PREF_COUNT_SKIPPED ||
-            key == FileCopyWorker.PREF_COUNT_OLD) {
+            key == FileCopyWorker.PREF_COUNT_OLD ||
+            key == FileCopyWorker.PREF_TOTAL_FILES ||
+            key == FileCopyWorker.PREF_NEWEST_OLD_INFO) {
             refreshLastCopy(prefs)
         }
     }

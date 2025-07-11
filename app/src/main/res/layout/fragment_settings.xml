@@ -34,6 +34,7 @@
                 android:layout_height="wrap_content" />
         </LinearLayout>
 
+
         <RadioGroup
             android:id="@+id/radio_mode"
             android:orientation="vertical"
@@ -80,6 +81,13 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
 
+        <Switch
+            android:id="@+id/switch_countdown"
+            android:text="Show Time Until next Copy"
+            android:layout_marginTop="4dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
         <LinearLayout
             android:orientation="horizontal"
             android:layout_marginTop="8dp"
@@ -98,6 +106,14 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content" />
         </LinearLayout>
+
+        <ProgressBar
+            android:id="@+id/progress_files"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:max="100"
+            android:layout_marginTop="4dp" />
 
         <Button
             android:id="@+id/button_stop"
