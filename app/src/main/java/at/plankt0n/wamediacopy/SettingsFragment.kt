@@ -355,6 +355,7 @@ class SettingsFragment : Fragment(),
             .remove(FileCopyWorker.PREF_PROCESSED)
             .apply()
         StatusNotifier.hideService(requireContext())
+        StatusNotifier.clearResult(requireContext())
         refreshLastCopy(prefs)
     }
 

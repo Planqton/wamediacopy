@@ -7,6 +7,7 @@ import android.preference.PreferenceManager
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import at.plankt0n.wamediacopy.StatusNotifier
 
 import java.util.concurrent.TimeUnit
 
@@ -15,6 +16,7 @@ class BootReceiver : BroadcastReceiver() {
         val action = intent.action
         if (action == Intent.ACTION_BOOT_COMPLETED ||
             action == Intent.ACTION_MY_PACKAGE_REPLACED) {
+            StatusNotifier.clearResult(context)
             val prefs = PreferenceManager.getDefaultSharedPreferences(context)
             if (prefs.getBoolean(SettingsFragment.PREF_ENABLED, true)) {
                 val minutes = prefs.getInt(FileCopyWorker.PREF_INTERVAL_MINUTES, 720)

@@ -38,6 +38,10 @@ object StatusNotifier {
         NotificationManagerCompat.from(context).notify(RESULT_ID, notif)
     }
 
+    fun clearResult(context: Context) {
+        NotificationManagerCompat.from(context).cancel(RESULT_ID)
+    }
+
     fun hideService(context: Context) {
         val nm = NotificationManagerCompat.from(context)
         nm.cancel(SERVICE_ID)
