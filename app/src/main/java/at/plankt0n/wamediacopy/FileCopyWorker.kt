@@ -119,9 +119,23 @@ class FileCopyWorker(
                             try {
                                 val name = doc.name ?: return
                                 val finalName = if (alias.isNotBlank()) alias + name else name
-                                var target = destDir.findFile(finalName)
+                                var targetName = finalName
+                                var target = destDir.findFile(targetName)
+                                if (target != null) {
+                                    val dot = targetName.lastIndexOf('.')
+                                    val base = if (dot >= 0) targetName.substring(0, dot) else targetName
+                                    val ext = if (dot >= 0) targetName.substring(dot) else ""
+                                    var index = 1
+                                    var candidate: DocumentFile? = destDir.findFile("${base}_$index$ext")
+                                    while (candidate != null) {
+                                        index++
+                                        candidate = destDir.findFile("${base}_$index$ext")
+                                    }
+                                    targetName = "${base}_$index$ext"
+                                    target = null
+                                }
                                 if (target == null) {
-                                    target = destDir.createFile(doc.type ?: "application/octet-stream", finalName)
+                                    target = destDir.createFile(doc.type ?: "application/octet-stream", targetName)
                                 }
                                 if (target != null) {
                                     applicationContext.contentResolver.openInputStream(doc.uri)?.use { input ->
