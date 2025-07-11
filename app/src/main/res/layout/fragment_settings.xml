@@ -20,17 +20,16 @@
             android:layout_marginTop="8dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
-            <SeekBar
-                android:id="@+id/seek_age"
+            <Button
+                android:id="@+id/button_age"
+                android:text="Set age"
                 android:layout_weight="1"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:max="30"
-                android:min="1" />
+                android:layout_height="wrap_content" />
             <TextView
                 android:id="@+id/text_age"
                 android:layout_marginStart="8dp"
-                android:text="1 Tag"
+                android:text="1 day"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content" />
         </LinearLayout>
@@ -58,13 +57,12 @@
             android:layout_marginTop="8dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
-            <SeekBar
-                android:id="@+id/seek_interval"
+            <Button
+                android:id="@+id/button_interval"
+                android:text="Set interval"
                 android:layout_weight="1"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:max="144"
-                android:min="1" />
+                android:layout_height="wrap_content" />
             <TextView
                 android:id="@+id/text_interval"
                 android:layout_marginStart="8dp"
