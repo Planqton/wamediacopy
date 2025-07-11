@@ -3,10 +3,10 @@ package at.plankt0n.wamediacopy
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.widget.Button
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.google.android.material.bottomnavigation.BottomNavigationView
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -15,21 +15,32 @@ class MainActivity : AppCompatActivity() {
 
         checkPermissions()
 
+        val bottom = findViewById<BottomNavigationView>(R.id.bottom_nav)
+        bottom.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_settings -> {
+                    supportFragmentManager.beginTransaction()
+                        .replace(R.id.fragment_container, SettingsFragment())
+                        .commit()
+                    true
+                }
+                R.id.nav_copied -> {
+                    supportFragmentManager.beginTransaction()
+                        .replace(R.id.fragment_container, CopiedListFragment())
+                        .commit()
+                    true
+                }
+                R.id.nav_log -> {
+                    supportFragmentManager.beginTransaction()
+                        .replace(R.id.fragment_container, LogFragment())
+                        .commit()
+                    true
+                }
+                else -> false
+            }
+        }
         if (savedInstanceState == null) {
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, SettingsFragment())
-                .commit()
-        }
-
-        findViewById<Button>(R.id.button_show_settings).setOnClickListener {
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, SettingsFragment())
-                .commit()
-        }
-        findViewById<Button>(R.id.button_show_copied).setOnClickListener {
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.fragment_container, CopiedListFragment())
-                .commit()
+            bottom.selectedItemId = R.id.nav_settings
         }
     }
 
