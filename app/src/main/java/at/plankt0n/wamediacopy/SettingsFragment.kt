@@ -187,6 +187,9 @@ class SettingsFragment : Fragment(),
         }
         val running = prefs.getBoolean(FileCopyWorker.PREF_IS_RUNNING, false)
         val processed = prefs.getLong(FileCopyWorker.PREF_PROCESSED, 0L)
+        val copied = prefs.getLong(FileCopyWorker.PREF_COUNT_COPIED, 0L)
+        val skipped = prefs.getLong(FileCopyWorker.PREF_COUNT_SKIPPED, 0L)
+        val old = prefs.getLong(FileCopyWorker.PREF_COUNT_OLD, 0L)
 
         manual.isEnabled = !running
         aliasEdit.isEnabled = !running
@@ -198,7 +201,9 @@ class SettingsFragment : Fragment(),
         checkPerms.isEnabled = !running
 
         val base = "$lastLabel\n$nextLabel"
-        val combined = if (running) "$base\nProcessed: $processed" else base
+        val combined = if (running) {
+            "$base\nProcessed: $processed\nCopied: $copied\nSkipped: $skipped\nToo old: $old"
+        } else base
         lastCopyText.text = combined
     }
 
@@ -332,7 +337,10 @@ class SettingsFragment : Fragment(),
         if (key == FileCopyWorker.PREF_IS_RUNNING ||
             key == FileCopyWorker.PREF_PROCESSED ||
             key == FileCopyWorker.PREF_LAST_COPY ||
-            key == FileCopyWorker.PREF_NEXT_COPY) {
+            key == FileCopyWorker.PREF_NEXT_COPY ||
+            key == FileCopyWorker.PREF_COUNT_COPIED ||
+            key == FileCopyWorker.PREF_COUNT_SKIPPED ||
+            key == FileCopyWorker.PREF_COUNT_OLD) {
             refreshLastCopy(prefs)
         }
     }

@@ -14,13 +14,16 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import at.plankt0n.wamediacopy.AppLog
+import android.content.SharedPreferences
 
-class FoldersFragment : Fragment() {
+class FoldersFragment : Fragment(), SharedPreferences.OnSharedPreferenceChangeListener {
 
     private lateinit var sourcesLayout: LinearLayout
     private lateinit var destEdit: EditText
     private lateinit var addSource: Button
     private lateinit var pickDest: Button
+
+    private lateinit var prefs: SharedPreferences
 
     private val sources = mutableListOf<String>()
 
@@ -39,7 +42,7 @@ class FoldersFragment : Fragment() {
         addSource = view.findViewById(R.id.button_add_source)
         pickDest = view.findViewById(R.id.button_pick_dest)
 
-        val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
+        prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
         sources.clear()
         sources.addAll(prefs.getStringSet(FileCopyWorker.PREF_SOURCES, emptySet()) ?: emptySet())
         refreshSources(prefs)
@@ -62,6 +65,7 @@ class FoldersFragment : Fragment() {
                 AppLog.add(requireContext(), "Set destination ${destEdit.text}")
             }
         })
+        updateEnabledState()
     }
 
     private fun pickFolder(request: Int) {
@@ -94,6 +98,7 @@ class FoldersFragment : Fragment() {
             row.addView(remove)
             sourcesLayout.addView(row)
         }
+        updateEnabledState()
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -105,7 +110,6 @@ class FoldersFragment : Fragment() {
                 uri,
                 Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
             )
-            val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
             when (requestCode) {
                 REQ_PICK_SOURCE -> {
                     sources.add(uri.toString())
@@ -119,6 +123,33 @@ class FoldersFragment : Fragment() {
                     AppLog.add(requireContext(), "Set destination $uri")
                 }
             }
+        }
+    }
+
+    private fun updateEnabledState() {
+        val running = prefs.getBoolean(FileCopyWorker.PREF_IS_RUNNING, false)
+        addSource.isEnabled = !running
+        pickDest.isEnabled = !running
+        destEdit.isEnabled = !running
+        for (i in 0 until sourcesLayout.childCount) {
+            sourcesLayout.getChildAt(i).isEnabled = !running
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        prefs.registerOnSharedPreferenceChangeListener(this)
+        updateEnabledState()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        prefs.unregisterOnSharedPreferenceChangeListener(this)
+    }
+
+    override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
+        if (key == FileCopyWorker.PREF_IS_RUNNING) {
+            updateEnabledState()
         }
     }
 

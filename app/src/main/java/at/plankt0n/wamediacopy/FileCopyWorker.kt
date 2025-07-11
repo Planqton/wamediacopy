@@ -61,7 +61,12 @@ class FileCopyWorker(
         var alreadySkipped = 0L
         var processed = 0L
 
-        prefs.edit().putLong(PREF_PROCESSED, 0L).apply()
+        prefs.edit()
+            .putLong(PREF_PROCESSED, 0L)
+            .putLong(PREF_COUNT_COPIED, 0L)
+            .putLong(PREF_COUNT_OLD, 0L)
+            .putLong(PREF_COUNT_SKIPPED, 0L)
+            .apply()
         setForeground(createForegroundInfo(0L))
         val manual = inputData.getBoolean(KEY_MANUAL, false)
         if (!manual && requireManual) {
@@ -111,7 +116,9 @@ class FileCopyWorker(
                     traverse(doc)
                 } else if (doc.isFile) {
                     processed++
-                    prefs.edit().putLong(PREF_PROCESSED, processed).apply()
+                    prefs.edit()
+                        .putLong(PREF_PROCESSED, processed)
+                        .apply()
                     setForeground(createForegroundInfo(processed))
                     if (doc.lastModified() >= cutoff) {
                         val key = doc.uri.toString()
@@ -146,6 +153,7 @@ class FileCopyWorker(
                                     Log.d(TAG, "Copied file")
                                     copied.add(key)
                                     newCount++
+                                    prefs.edit().putLong(PREF_COUNT_COPIED, newCount).apply()
                                 }
                             } catch (e: Exception) {
                                 Log.w(TAG, "Failed to copy file", e)
@@ -153,10 +161,12 @@ class FileCopyWorker(
                         } else {
                             Log.d(TAG, "Already copied file")
                             alreadySkipped++
+                            prefs.edit().putLong(PREF_COUNT_SKIPPED, alreadySkipped).apply()
                         }
                     } else {
                         Log.d(TAG, "Too old file")
                         oldSkipped++
+                        prefs.edit().putLong(PREF_COUNT_OLD, oldSkipped).apply()
                     }
                 }
             }
@@ -189,6 +199,9 @@ class FileCopyWorker(
             prefs.edit()
                 .putBoolean(PREF_IS_RUNNING, false)
                 .remove(PREF_PROCESSED)
+                .remove(PREF_COUNT_COPIED)
+                .remove(PREF_COUNT_OLD)
+                .remove(PREF_COUNT_SKIPPED)
                 .apply()
         }
     }
@@ -205,6 +218,9 @@ class FileCopyWorker(
         const val PREF_INTERVAL_MINUTES = "intervalM"
         const val PREF_IS_RUNNING = "copyRunning"
         const val PREF_PROCESSED = "processed"
+        const val PREF_COUNT_COPIED = "countCopied"
+        const val PREF_COUNT_OLD = "countOld"
+        const val PREF_COUNT_SKIPPED = "countSkipped"
         const val PREF_REQUIRE_MANUAL_FIRST = "requireManual"
         const val KEY_MANUAL = "manual"
         const val CHANNEL_ID = "copy_status"
