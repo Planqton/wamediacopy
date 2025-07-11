@@ -3,6 +3,10 @@ package at.plankt0n.wamediacopy
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.os.PowerManager
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -46,6 +50,12 @@ class MainActivity : AppCompatActivity() {
         }
         if (needed.isNotEmpty()) {
             ActivityCompat.requestPermissions(this, needed.toTypedArray(), REQ_PERMS)
+        }
+        val pm = getSystemService(PowerManager::class.java)
+        if (!pm.isIgnoringBatteryOptimizations(packageName)) {
+            val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+            intent.data = Uri.parse("package:$packageName")
+            startActivity(intent)
         }
     }
 

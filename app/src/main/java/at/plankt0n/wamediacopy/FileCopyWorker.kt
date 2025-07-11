@@ -52,6 +52,7 @@ class FileCopyWorker(
         val copyMode = prefs.getInt(PREF_COPY_MODE, 0)
         val lastCopy = prefs.getLong(PREF_LAST_COPY, 0L)
         val intervalMin = prefs.getInt(PREF_INTERVAL_MINUTES, 0)
+        val requireManual = prefs.getBoolean(PREF_REQUIRE_MANUAL_FIRST, true)
         val alias = prefs.getString(PREF_ALIAS, "") ?: ""
         val copied = prefs.getStringSet(PREF_COPIED, mutableSetOf())?.toMutableSet() ?: mutableSetOf()
         var newCount = 0
@@ -59,6 +60,16 @@ class FileCopyWorker(
         var alreadySkipped = 0
 
         setForeground(createForegroundInfo())
+        val manual = inputData.getBoolean(KEY_MANUAL, false)
+        if (!manual && requireManual) {
+            Log.d(TAG, "Waiting for manual first copy")
+            AppLog.add(applicationContext, "Waiting for manual first copy")
+            return@withContext Result.success()
+        }
+        if (manual) {
+            prefs.edit().putBoolean(PREF_REQUIRE_MANUAL_FIRST, false).apply()
+        }
+
         if (intervalMin > 0 && lastCopy != 0L) {
             val elapsed = System.currentTimeMillis() - lastCopy
             if (elapsed < intervalMin * 60_000L) {
@@ -170,6 +181,8 @@ class FileCopyWorker(
         const val PREF_COPY_MODE = "copyMode"
         const val PREF_INTERVAL_MINUTES = "intervalM"
         const val PREF_IS_RUNNING = "copyRunning"
+        const val PREF_REQUIRE_MANUAL_FIRST = "requireManual"
+        const val KEY_MANUAL = "manual"
         const val CHANNEL_ID = "copy_status"
         const val FOREGROUND_ID = 100
         const val TAG = "FileCopyWorker"

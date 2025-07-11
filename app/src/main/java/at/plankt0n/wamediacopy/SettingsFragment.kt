@@ -16,10 +16,14 @@ import android.widget.Switch
 import android.widget.TextView
 import android.os.PowerManager
 import androidx.core.content.ContextCompat
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import androidx.fragment.app.Fragment
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.workDataOf
 import androidx.work.WorkManager
 import at.plankt0n.wamediacopy.AppLog
 import at.plankt0n.wamediacopy.StatusNotifier
@@ -200,6 +204,9 @@ class SettingsFragment : Fragment() {
         }
         val pm = ctx.getSystemService(android.os.PowerManager::class.java)
         if (!pm.isIgnoringBatteryOptimizations(ctx.packageName)) {
+            val intent = Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+            intent.data = Uri.parse("package:" + ctx.packageName)
+            startActivity(intent)
             missing.add("Battery optimizations")
         }
         val hasBoot = ctx.packageManager.checkPermission(
@@ -218,6 +225,9 @@ class SettingsFragment : Fragment() {
         Log.d(TAG, "scheduleWork")
         val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
         val minutes = prefs.getInt(FileCopyWorker.PREF_INTERVAL_MINUTES, 720)
+        if (prefs.getLong(FileCopyWorker.PREF_LAST_COPY, 0L) == 0L) {
+            prefs.edit().putBoolean(FileCopyWorker.PREF_REQUIRE_MANUAL_FIRST, true).apply()
+        }
         val period = if (minutes < 15) 15L else minutes.toLong()
         val request = PeriodicWorkRequestBuilder<FileCopyWorker>(period, TimeUnit.MINUTES).build()
         manager.enqueueUniquePeriodicWork(WORK_NAME, ExistingPeriodicWorkPolicy.UPDATE, request)
@@ -231,8 +241,13 @@ class SettingsFragment : Fragment() {
             AppLog.add(requireContext(), "Copy already running")
             return
         }
-        prefs.edit().putBoolean(FileCopyWorker.PREF_IS_RUNNING, true).apply()
-        val request = OneTimeWorkRequestBuilder<FileCopyWorker>().build()
+        prefs.edit()
+            .putBoolean(FileCopyWorker.PREF_IS_RUNNING, true)
+            .putBoolean(FileCopyWorker.PREF_REQUIRE_MANUAL_FIRST, false)
+            .apply()
+        val request = OneTimeWorkRequestBuilder<FileCopyWorker>()
+            .setInputData(androidx.work.workDataOf(FileCopyWorker.KEY_MANUAL to true))
+            .build()
         manager.enqueue(request)
         refreshLastCopy(prefs)
     }
