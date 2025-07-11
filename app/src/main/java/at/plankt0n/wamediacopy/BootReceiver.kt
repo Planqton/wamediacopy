@@ -18,7 +18,7 @@ class BootReceiver : BroadcastReceiver() {
             val prefs = PreferenceManager.getDefaultSharedPreferences(context)
             if (prefs.getBoolean(SettingsFragment.PREF_ENABLED, true)) {
                 val minutes = prefs.getInt(FileCopyWorker.PREF_INTERVAL_MINUTES, 720)
-                val period = if (minutes < 15) 15L else minutes.toLong()
+                val period = minutes.coerceAtLeast(15).toLong()
                 val request = PeriodicWorkRequestBuilder<FileCopyWorker>(period, TimeUnit.MINUTES).build()
                 WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                     SettingsFragment.WORK_NAME,
@@ -27,7 +27,7 @@ class BootReceiver : BroadcastReceiver() {
                 )
                 val last = prefs.getLong(FileCopyWorker.PREF_LAST_COPY, 0L)
                 val base = if (last > 0L) maxOf(System.currentTimeMillis(), last) else System.currentTimeMillis()
-                val next = base + minutes * 60_000L
+                val next = base + period * 60_000L
                 prefs.edit()
                     .putBoolean(FileCopyWorker.PREF_IS_RUNNING, false)
                     .remove(FileCopyWorker.PREF_PROCESSED)
