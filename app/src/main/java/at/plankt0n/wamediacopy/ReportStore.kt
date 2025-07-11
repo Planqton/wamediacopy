@@ -48,7 +48,7 @@ object ReportStore {
             res.add(
                 CopyReport(
                     obj.getLong("ts"),
-                    obj.getString("file"),
+                    obj.optString("file"),
                     obj.optInt("c"),
                     obj.optInt("o"),
                     obj.optInt("s"),
