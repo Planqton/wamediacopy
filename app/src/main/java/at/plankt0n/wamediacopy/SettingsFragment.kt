@@ -220,7 +220,7 @@ class SettingsFragment : Fragment(),
                 ageText.text = "-"
             } else {
                 ageText.text = formatDuration(diff)
-                prefs.edit().putInt(FileCopyWorker.PREF_MAX_AGE_MINUTES, diff).apply()
+                prefs.edit().putInt(FileCopyWorker.PREF_SINCE_AGE_MINUTES, diff).apply()
             }
         }
     }
