@@ -193,8 +193,9 @@ class SettingsFragment : Fragment() {
         val missing = mutableListOf<String>()
         val ctx = requireContext()
         val storagePerms = arrayOf(
-            android.Manifest.permission.READ_EXTERNAL_STORAGE,
-            android.Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            android.Manifest.permission.READ_MEDIA_IMAGES,
+            android.Manifest.permission.READ_MEDIA_VIDEO,
+            android.Manifest.permission.READ_MEDIA_AUDIO,
             android.Manifest.permission.POST_NOTIFICATIONS
         )
         val needReq = storagePerms.filter {
