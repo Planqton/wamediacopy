@@ -28,7 +28,7 @@ class FileCopyWorker(
         nm.createNotificationChannel(channel)
         val notif = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_sys_upload)
-            .setContentTitle("Processed files: $processed")
+            .setContentTitle("Files Processed: $processed")
             .setOngoing(true)
             .build()
         val type = if (android.os.Build.VERSION.SDK_INT >= 34) {
@@ -159,7 +159,7 @@ class FileCopyWorker(
                 .putLong(PREF_NEXT_COPY, next)
                 .apply()
 
-            val summary = "Copied $newCount - Skipped Old:$oldSkipped - Skipped Blacklist:$alreadySkipped"
+            val summary = "Copied:$newCount - Too Old:$oldSkipped - Skipped:$alreadySkipped"
             StatusNotifier.showResult(applicationContext, newCount, oldSkipped, alreadySkipped)
             AppLog.add(applicationContext, summary)
 

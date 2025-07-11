@@ -15,7 +15,7 @@ object StatusNotifier {
         val channel = NotificationChannel(CHANNEL_ID, "Copy status", NotificationManager.IMPORTANCE_LOW)
         val nm = context.getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(channel)
-        val text = processed?.let { "Processed Files: $it" } ?: ""
+        val text = processed?.let { "Files Processed: $it" } ?: ""
         val notif = NotificationCompat.Builder(context, CHANNEL_ID)
             .setContentTitle("Whatsapp Copy")
             .setContentText(text)
@@ -29,7 +29,7 @@ object StatusNotifier {
         val channel = NotificationChannel(CHANNEL_ID, "Copy status", NotificationManager.IMPORTANCE_LOW)
         val nm = context.getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(channel)
-        val text = "Copied Files:$copied - Skipped Old:$old - Skipped Blacklist:$skipped"
+        val text = "Copied:$copied - Too Old:$old - Skipped:$skipped"
         val notif = NotificationCompat.Builder(context, CHANNEL_ID)
             .setContentTitle("Whatsapp Copy: Copy Finished")
             .setContentText(text)
