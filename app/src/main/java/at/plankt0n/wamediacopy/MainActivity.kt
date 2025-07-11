@@ -45,7 +45,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun checkPermissions() {
-        val needed = REQUIRED_PERMISSIONS.filter {
+        val perms = arrayOf(
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            Manifest.permission.POST_NOTIFICATIONS,
+        )
+        val needed = perms.filter {
             ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
         }
         if (needed.isNotEmpty()) {
@@ -69,10 +74,5 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val REQ_PERMS = 1234
-        private val REQUIRED_PERMISSIONS = arrayOf(
-            Manifest.permission.READ_EXTERNAL_STORAGE,
-            Manifest.permission.WRITE_EXTERNAL_STORAGE,
-            Manifest.permission.POST_NOTIFICATIONS
-        )
     }
 }
