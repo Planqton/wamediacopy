@@ -294,7 +294,7 @@ class SettingsFragment : Fragment(),
         if (prefs.getLong(FileCopyWorker.PREF_LAST_COPY, 0L) == 0L) {
             prefs.edit().putBoolean(FileCopyWorker.PREF_REQUIRE_MANUAL_FIRST, true).apply()
         }
-        val period = minutes.coerceAtLeast(15).toLong()
+        val period = minutes.coerceAtLeast(3).toLong()
         val request = PeriodicWorkRequestBuilder<FileCopyWorker>(period, TimeUnit.MINUTES)
             .addTag(FileCopyWorker.TAG)
             .build()
@@ -322,7 +322,7 @@ class SettingsFragment : Fragment(),
 
         if (toggle.isChecked) {
             val minutes = prefs.getInt(FileCopyWorker.PREF_INTERVAL_MINUTES, 720)
-            val period = minutes.coerceAtLeast(15).toLong()
+            val period = minutes.coerceAtLeast(3).toLong()
             val requestPeriodic =
                 PeriodicWorkRequestBuilder<FileCopyWorker>(period, TimeUnit.MINUTES)
                     .addTag(FileCopyWorker.TAG)
@@ -426,7 +426,7 @@ class SettingsFragment : Fragment(),
     }
 
     private fun minutesToSlider(minutes: Int): Float {
-        val min = 1f
+        val min = 3f
         val max = 43200f
         val minLog = ln(min)
         val maxLog = ln(max)
@@ -435,7 +435,7 @@ class SettingsFragment : Fragment(),
     }
 
     private fun sliderToMinutes(value: Float): Int {
-        val min = 1f
+        val min = 3f
         val max = 43200f
         val minLog = ln(min)
         val maxLog = ln(max)
