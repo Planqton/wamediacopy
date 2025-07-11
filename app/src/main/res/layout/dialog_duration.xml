@@ -5,37 +5,20 @@
     android:orientation="vertical"
     android:padding="16dp">
 
-    <LinearLayout
-        android:orientation="horizontal"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-        <NumberPicker
-            android:id="@+id/picker_weeks"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="wrap_content" />
-        <NumberPicker
-            android:id="@+id/picker_days"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="wrap_content" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:orientation="horizontal"
+    <TextView
+        android:id="@+id/text_duration"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp">
-        <NumberPicker
-            android:id="@+id/picker_hours"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="wrap_content" />
-        <NumberPicker
-            android:id="@+id/picker_minutes"
-            android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="wrap_content" />
-    </LinearLayout>
+        android:gravity="center_horizontal"
+        android:text="10m" />
+
+    <com.google.android.material.slider.Slider
+        android:id="@+id/slider_duration"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:valueFrom="10"
+        android:valueTo="43200"
+        android:stepSize="10"
+        android:layout_marginTop="8dp" />
 
 </LinearLayout>

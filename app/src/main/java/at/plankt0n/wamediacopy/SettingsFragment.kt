@@ -11,9 +11,9 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
 import android.widget.RadioGroup
-import android.widget.NumberPicker
 import android.widget.Switch
 import android.widget.TextView
+import com.google.android.material.slider.Slider
 import android.os.PowerManager
 import androidx.core.content.ContextCompat
 import android.content.Intent
@@ -357,29 +357,27 @@ class SettingsFragment : Fragment(),
 
     private fun showDurationDialog(title: String, startMinutes: Int, onResult: (Int) -> Unit) {
         val view = layoutInflater.inflate(R.layout.dialog_duration, null)
-        val w = view.findViewById<NumberPicker>(R.id.picker_weeks)
-        val d = view.findViewById<NumberPicker>(R.id.picker_days)
-        val h = view.findViewById<NumberPicker>(R.id.picker_hours)
-        val m = view.findViewById<NumberPicker>(R.id.picker_minutes)
-        w.minValue = 0; w.maxValue = 52
-        d.minValue = 0; d.maxValue = 6
-        h.minValue = 0; h.maxValue = 23
-        m.minValue = 0; m.maxValue = 59
-        var remain = startMinutes
-        w.value = remain / (7 * 24 * 60)
-        remain %= 7 * 24 * 60
-        d.value = remain / (24 * 60)
-        remain %= 24 * 60
-        h.value = remain / 60
-        remain %= 60
-        m.value = remain
+        val slider = view.findViewById<Slider>(R.id.slider_duration)
+        val label = view.findViewById<TextView>(R.id.text_duration)
 
-        androidx.appcompat.app.AlertDialog.Builder(requireContext())
+        slider.valueFrom = 10f
+        slider.valueTo = 43200f
+        slider.stepSize = 10f
+        slider.value = startMinutes.toFloat()
+        label.text = formatDuration(startMinutes)
+
+        slider.addOnChangeListener { _, value, _ ->
+            label.text = formatDuration(value.toInt())
+        }
+        slider.setLabelFormatter { value: Float ->
+            formatDuration(value.toInt())
+        }
+
+        AlertDialog.Builder(requireContext())
             .setTitle(title)
             .setView(view)
             .setPositiveButton(android.R.string.ok) { _, _ ->
-                val total = w.value * 7 * 24 * 60 + d.value * 24 * 60 + h.value * 60 + m.value
-                onResult(total)
+                onResult(slider.value.toInt())
             }
             .setNegativeButton(android.R.string.cancel, null)
             .show()
