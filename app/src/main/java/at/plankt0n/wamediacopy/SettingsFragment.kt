@@ -137,6 +137,15 @@ class SettingsFragment : Fragment(),
             showDurationDialog("Interval", current) {
                 intervalText.text = formatDuration(it)
                 prefs.edit().putInt(FileCopyWorker.PREF_INTERVAL_MINUTES, it).apply()
+                if (toggle.isChecked) {
+                    scheduleWork()
+                } else {
+                    // update next timestamp for display
+                    val last = prefs.getLong(FileCopyWorker.PREF_LAST_COPY, 0L)
+                    val base = if (last > 0L) maxOf(System.currentTimeMillis(), last) else System.currentTimeMillis()
+                    prefs.edit().putLong(FileCopyWorker.PREF_NEXT_COPY, base + it * 60_000L).apply()
+                    refreshLastCopy(prefs)
+                }
             }
         }
 
