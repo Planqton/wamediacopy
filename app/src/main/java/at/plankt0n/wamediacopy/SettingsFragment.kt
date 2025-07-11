@@ -109,7 +109,7 @@ class SettingsFragment : Fragment() {
             toggle.isChecked = false
         }
         checkPerms.setOnClickListener {
-            permStatus.text = ensurePermissions()
+            permStatus.text = ensurePermissions(true)
         }
 
         val watcher = object : TextWatcher {
@@ -154,12 +154,14 @@ class SettingsFragment : Fragment() {
         if (toggle.isChecked) scheduleWork() else cancelWork()
 
         refreshLastCopy(prefs)
+        permStatus.text = ensurePermissions()
     }
 
     override fun onResume() {
         super.onResume()
         val prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
         refreshLastCopy(prefs)
+        permStatus.text = ensurePermissions()
     }
 
     private fun refreshLastCopy(prefs: android.content.SharedPreferences) {
@@ -187,7 +189,7 @@ class SettingsFragment : Fragment() {
         }
     }
 
-    private fun ensurePermissions(): String {
+    private fun ensurePermissions(request: Boolean = false): String {
         val missing = mutableListOf<String>()
         val ctx = requireContext()
         val storagePerms = arrayOf(
@@ -199,7 +201,9 @@ class SettingsFragment : Fragment() {
             androidx.core.content.ContextCompat.checkSelfPermission(ctx, it) != android.content.pm.PackageManager.PERMISSION_GRANTED
         }
         if (needReq.isNotEmpty()) {
-            requestPermissions(needReq.toTypedArray(), REQ_PERMS)
+            if (request) {
+                requestPermissions(needReq.toTypedArray(), REQ_PERMS)
+            }
             missing.addAll(needReq.map { it.substringAfterLast('.') })
         }
         val pm = ctx.getSystemService(android.os.PowerManager::class.java)
@@ -256,6 +260,17 @@ class SettingsFragment : Fragment() {
         Log.d(TAG, "cancelWork")
         manager.cancelUniqueWork(WORK_NAME)
         StatusNotifier.hide(requireContext())
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQ_PERMS) {
+            permStatus.text = ensurePermissions()
+        }
     }
 
 
