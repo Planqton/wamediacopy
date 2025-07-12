@@ -25,11 +25,11 @@ object StatusNotifier {
         NotificationManagerCompat.from(context).notify(SERVICE_ID, notif)
     }
 
-    fun showResult(context: Context, copied: Long, old: Long, skipped: Long) {
+    fun showResult(context: Context, copied: Long, old: Long, exist: Long, skipped: Long) {
         val channel = NotificationChannel(CHANNEL_ID, "Copy status", NotificationManager.IMPORTANCE_LOW)
         val nm = context.getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(channel)
-        val text = "Copied:$copied - Too Old:$old - Skipped:$skipped"
+        val text = "Copied:$copied - Too Old:$old - Skipped existing:$exist - Skipped:$skipped"
         val notif = NotificationCompat.Builder(context, CHANNEL_ID)
             .setContentTitle("Whatsapp Copy: Copy Finished")
             .setContentText(text)

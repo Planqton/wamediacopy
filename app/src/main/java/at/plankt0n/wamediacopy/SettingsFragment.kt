@@ -193,6 +193,7 @@ class SettingsFragment : Fragment(),
         val processed = prefs.getLong(FileCopyWorker.PREF_PROCESSED, 0L)
         val copied = prefs.getLong(FileCopyWorker.PREF_COUNT_COPIED, 0L)
         val skipped = prefs.getLong(FileCopyWorker.PREF_COUNT_SKIPPED, 0L)
+        val existSkipped = prefs.getLong(FileCopyWorker.PREF_COUNT_EXISTING, 0L)
         val old = prefs.getLong(FileCopyWorker.PREF_COUNT_OLD, 0L)
 
         manual.isEnabled = !running
@@ -205,7 +206,7 @@ class SettingsFragment : Fragment(),
 
         val base = "$lastLabel\n$nextLabel"
         val combined = if (running) {
-            "$base\nProcessed: $processed\nCopied: $copied\nSkipped: $skipped\nToo old: $old"
+            "$base\nProcessed: $processed\nCopied: $copied\nSkipped existing: $existSkipped\nSkipped: $skipped\nToo old: $old"
         } else base
         lastCopyText.text = combined
         refreshAge()
@@ -380,6 +381,7 @@ class SettingsFragment : Fragment(),
             key == FileCopyWorker.PREF_COPY_MODE ||
             key == FileCopyWorker.PREF_COUNT_COPIED ||
             key == FileCopyWorker.PREF_COUNT_SKIPPED ||
+            key == FileCopyWorker.PREF_COUNT_EXISTING ||
             key == FileCopyWorker.PREF_COUNT_OLD) {
             refreshLastCopy(prefs)
         }

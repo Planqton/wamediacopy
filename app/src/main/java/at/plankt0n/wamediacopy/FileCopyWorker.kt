@@ -62,6 +62,7 @@ class FileCopyWorker(
         var newCount = 0L
         var oldSkipped = 0L
         var alreadySkipped = 0L
+        var existingSkipped = 0L
         var processed = 0L
         var newestOldName: String? = null
         var newestOldTime = 0L
@@ -72,6 +73,7 @@ class FileCopyWorker(
             .putLong(PREF_COUNT_COPIED, 0L)
             .putLong(PREF_COUNT_OLD, 0L)
             .putLong(PREF_COUNT_SKIPPED, 0L)
+            .putLong(PREF_COUNT_EXISTING, 0L)
             .putBoolean(PREF_STOP_REQUESTED, false)
             .apply()
         setForeground(createForegroundInfo(0L))
@@ -146,7 +148,11 @@ class FileCopyWorker(
                                     Log.d(TAG, "Exists elsewhere")
                                     AppLog.add(applicationContext, "skipped existfile")
                                     alreadySkipped++
-                                    prefs.edit().putLong(PREF_COUNT_SKIPPED, alreadySkipped).apply()
+                                    existingSkipped++
+                                    prefs.edit()
+                                        .putLong(PREF_COUNT_SKIPPED, alreadySkipped)
+                                        .putLong(PREF_COUNT_EXISTING, existingSkipped)
+                                        .apply()
                                     continue
                                 }
                                 var targetName = finalName
@@ -229,8 +235,8 @@ class FileCopyWorker(
                 .putLong(PREF_LAST_COPY, now)
                 .apply()
 
-            val summary = "Copied:$newCount - Too Old:$oldSkipped - Skipped:$alreadySkipped"
-            StatusNotifier.showResult(applicationContext, newCount, oldSkipped, alreadySkipped)
+            val summary = "Copied:$newCount - Too Old:$oldSkipped - Skipped existing:$existingSkipped - Skipped:$alreadySkipped"
+            StatusNotifier.showResult(applicationContext, newCount, oldSkipped, existingSkipped, alreadySkipped)
             AppLog.add(applicationContext, summary)
 
             if (intervalMin > 0) {
@@ -256,6 +262,7 @@ class FileCopyWorker(
                 .remove(PREF_COUNT_COPIED)
                 .remove(PREF_COUNT_OLD)
                 .remove(PREF_COUNT_SKIPPED)
+                .remove(PREF_COUNT_EXISTING)
                 .putBoolean(PREF_STOP_REQUESTED, false)
                 .apply()
         }
@@ -290,6 +297,7 @@ class FileCopyWorker(
         const val PREF_COUNT_COPIED = "countCopied"
         const val PREF_COUNT_OLD = "countOld"
         const val PREF_COUNT_SKIPPED = "countSkipped"
+        const val PREF_COUNT_EXISTING = "countExisting"
         const val PREF_REQUIRE_MANUAL_FIRST = "requireManual"
         const val PREF_STOP_REQUESTED = "stopRequested"
         const val KEY_MANUAL = "manual"
