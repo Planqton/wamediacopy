@@ -137,14 +137,17 @@ class FileCopyWorker(
                         .putLong(PREF_PROCESSED, processed)
                         .apply()
                     setForeground(createForegroundInfo(processed))
-                    if (doc.lastModified() >= cutoff) {
-                        val key = doc.uri.toString()
-                        if (!copied.contains(key)) {
-                            try {
-                                val name = doc.name ?: return
-                                val finalName = if (alias.isNotBlank()) alias + name else name
-                                val existsElsewhere = existDirs.any { it.findFile(finalName) != null }
-                                if (existsElsewhere) {
+                    val key = doc.uri.toString()
+                    if (copied.contains(key)) {
+                        Log.d(TAG, "Already copied file")
+                        alreadySkipped++
+                        prefs.edit().putLong(PREF_COUNT_SKIPPED, alreadySkipped).apply()
+                    } else if (doc.lastModified() >= cutoff) {
+                        try {
+                            val name = doc.name ?: return
+                            val finalName = if (alias.isNotBlank()) alias + name else name
+                            val existsElsewhere = existDirs.any { it.findFile(finalName) != null }
+                            if (existsElsewhere) {
                                     Log.d(TAG, "Exists elsewhere")
                                     AppLog.add(applicationContext, "skipped existfile")
                                     alreadySkipped++
@@ -187,11 +190,6 @@ class FileCopyWorker(
                             } catch (e: Exception) {
                                 Log.w(TAG, "Failed to copy file", e)
                             }
-                        } else {
-                            Log.d(TAG, "Already copied file")
-                            alreadySkipped++
-                            prefs.edit().putLong(PREF_COUNT_SKIPPED, alreadySkipped).apply()
-                        }
                     } else {
                         Log.d(TAG, "Too old file")
                         oldSkipped++
