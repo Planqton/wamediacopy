@@ -57,6 +57,7 @@ class FileCopyWorker(
         val intervalMin = prefs.getInt(PREF_INTERVAL_MINUTES, 0)
         val requireManual = prefs.getBoolean(PREF_REQUIRE_MANUAL_FIRST, true)
         val alias = prefs.getString(PREF_ALIAS, "") ?: ""
+        val existingDirs = prefs.getStringSet(PREF_EXISTING_DIRS, emptySet()) ?: emptySet()
         val copied = prefs.getStringSet(PREF_COPIED, mutableSetOf())?.toMutableSet() ?: mutableSetOf()
         var newCount = 0L
         var oldSkipped = 0L
@@ -103,6 +104,9 @@ class FileCopyWorker(
             prefs.edit().putBoolean(PREF_IS_RUNNING, false).apply()
             return@withContext Result.failure()
         }
+        val existDirs = existingDirs.mapNotNull {
+            DocumentFile.fromTreeUri(applicationContext, Uri.parse(it))
+        }
 
         val startTs = System.currentTimeMillis()
         if (copyMode == 1 && lastCopy > 0L) {
@@ -137,6 +141,14 @@ class FileCopyWorker(
                             try {
                                 val name = doc.name ?: return
                                 val finalName = if (alias.isNotBlank()) alias + name else name
+                                val existsElsewhere = existDirs.any { it.findFile(finalName) != null }
+                                if (existsElsewhere) {
+                                    Log.d(TAG, "Exists elsewhere")
+                                    AppLog.add(applicationContext, "skipped existfile")
+                                    alreadySkipped++
+                                    prefs.edit().putLong(PREF_COUNT_SKIPPED, alreadySkipped).apply()
+                                    continue
+                                }
                                 var targetName = finalName
                                 var target = destDir.findFile(targetName)
                                 if (target != null) {
@@ -265,6 +277,7 @@ class FileCopyWorker(
         const val PREF_SOURCES = "sources"
         const val PREF_DEST = "dest"
         const val PREF_ALIAS = "alias"
+        const val PREF_EXISTING_DIRS = "existingDirs"
         const val PREF_MAX_AGE_MINUTES = "maxAgeM"
         const val PREF_SINCE_AGE_MINUTES = "sinceAgeM"
         const val PREF_COPIED = "copiedFiles"

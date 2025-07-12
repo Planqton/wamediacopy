@@ -20,13 +20,16 @@ import android.net.Uri
 class FoldersFragment : Fragment(), SharedPreferences.OnSharedPreferenceChangeListener {
 
     private lateinit var sourcesLayout: LinearLayout
+    private lateinit var existLayout: LinearLayout
     private lateinit var destEdit: EditText
     private lateinit var addSource: Button
+    private lateinit var addExist: Button
     private lateinit var pickDest: Button
 
     private lateinit var prefs: SharedPreferences
 
     private val sources = mutableListOf<String>()
+    private val existing = mutableListOf<String>()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -39,19 +42,28 @@ class FoldersFragment : Fragment(), SharedPreferences.OnSharedPreferenceChangeLi
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         sourcesLayout = view.findViewById(R.id.layout_sources)
+        existLayout = view.findViewById(R.id.layout_exist)
         destEdit = view.findViewById(R.id.edit_dest)
         addSource = view.findViewById(R.id.button_add_source)
+        addExist = view.findViewById(R.id.button_add_exist)
         pickDest = view.findViewById(R.id.button_pick_dest)
 
         prefs = PreferenceManager.getDefaultSharedPreferences(requireContext())
         sources.clear()
         sources.addAll(prefs.getStringSet(FileCopyWorker.PREF_SOURCES, emptySet()) ?: emptySet())
         refreshSources(prefs)
+        existing.clear()
+        existing.addAll(prefs.getStringSet(FileCopyWorker.PREF_EXISTING_DIRS, emptySet()) ?: emptySet())
+        refreshExisting(prefs)
         destEdit.setText(Uri.decode(prefs.getString(FileCopyWorker.PREF_DEST, "")))
 
         addSource.setOnClickListener {
             Log.d(TAG, "add source pressed")
             pickFolder(REQ_PICK_SOURCE)
+        }
+        addExist.setOnClickListener {
+            Log.d(TAG, "add existing pressed")
+            pickFolder(REQ_PICK_EXIST)
         }
         pickDest.setOnClickListener {
             Log.d(TAG, "pick dest pressed")
@@ -96,6 +108,30 @@ class FoldersFragment : Fragment(), SharedPreferences.OnSharedPreferenceChangeLi
         updateEnabledState()
     }
 
+    private fun refreshExisting(prefs: android.content.SharedPreferences) {
+        existLayout.removeAllViews()
+        for (uri in existing) {
+            val row = LinearLayout(requireContext()).apply { orientation = LinearLayout.HORIZONTAL }
+            val tv = TextView(requireContext()).apply {
+                text = Uri.decode(uri)
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            }
+            val remove = Button(requireContext()).apply { text = "X" }
+            remove.setOnClickListener {
+                val decoded = Uri.decode(uri)
+                Log.d(TAG, "remove exist $decoded")
+                existing.remove(uri)
+                prefs.edit().putStringSet(FileCopyWorker.PREF_EXISTING_DIRS, existing.toSet()).apply()
+                refreshExisting(prefs)
+                AppLog.add(requireContext(), "Removed existing $decoded")
+            }
+            row.addView(tv)
+            row.addView(remove)
+            existLayout.addView(row)
+        }
+        updateEnabledState()
+    }
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (resultCode == Activity.RESULT_OK && data != null) {
@@ -119,6 +155,13 @@ class FoldersFragment : Fragment(), SharedPreferences.OnSharedPreferenceChangeLi
                     prefs.edit().putString(FileCopyWorker.PREF_DEST, uriStr).apply()
                     AppLog.add(requireContext(), "Set destination ${Uri.decode(uriStr)}")
                 }
+                REQ_PICK_EXIST -> {
+                    val uriStr = uri.toString()
+                    existing.add(uriStr)
+                    prefs.edit().putStringSet(FileCopyWorker.PREF_EXISTING_DIRS, existing.toSet()).apply()
+                    refreshExisting(prefs)
+                    AppLog.add(requireContext(), "Added existing ${Uri.decode(uriStr)}")
+                }
             }
         }
     }
@@ -126,16 +169,23 @@ class FoldersFragment : Fragment(), SharedPreferences.OnSharedPreferenceChangeLi
     private fun updateEnabledState() {
         val running = prefs.getBoolean(FileCopyWorker.PREF_IS_RUNNING, false)
         addSource.isEnabled = !running
+        addExist.isEnabled = !running
         pickDest.isEnabled = !running
         destEdit.isEnabled = false
         for (i in 0 until sourcesLayout.childCount) {
             sourcesLayout.getChildAt(i).isEnabled = !running
+        }
+        for (i in 0 until existLayout.childCount) {
+            existLayout.getChildAt(i).isEnabled = !running
         }
     }
 
     override fun onResume() {
         super.onResume()
         prefs.registerOnSharedPreferenceChangeListener(this)
+        existing.clear()
+        existing.addAll(prefs.getStringSet(FileCopyWorker.PREF_EXISTING_DIRS, emptySet()) ?: emptySet())
+        refreshExisting(prefs)
         updateEnabledState()
     }
 
@@ -153,6 +203,7 @@ class FoldersFragment : Fragment(), SharedPreferences.OnSharedPreferenceChangeLi
     companion object {
         const val REQ_PICK_SOURCE = 1001
         const val REQ_PICK_DEST = 1002
+        const val REQ_PICK_EXIST = 1003
         const val TAG = "FoldersFrag"
     }
 }
