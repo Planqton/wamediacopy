@@ -155,16 +155,17 @@ class FileCopyWorker(
                             val finalName = if (alias.isNotBlank()) alias + name else name
                             val existsElsewhere = existDirs.any { it.findFile(finalName) != null }
                             if (existsElsewhere) {
-                                    Log.d(TAG, "Exists elsewhere")
-                                    AppLog.add(applicationContext, "skipped existfile")
-                                    alreadySkipped++
-                                    existingSkipped++
-                                    prefs.edit()
-                                        .putLong(PREF_COUNT_SKIPPED, alreadySkipped)
-                                        .putLong(PREF_COUNT_EXISTING, existingSkipped)
-                                        .apply()
-                                    continue
-                                }
+                                Log.d(TAG, "Exists elsewhere")
+                                AppLog.add(applicationContext, "skipped existfile")
+                                alreadySkipped++
+                                existingSkipped++
+                                copied.add(key)
+                                prefs.edit()
+                                    .putLong(PREF_COUNT_SKIPPED, alreadySkipped)
+                                    .putLong(PREF_COUNT_EXISTING, existingSkipped)
+                                    .apply()
+                                continue
+                            }
                                 var targetName = finalName
                                 var target = destDir.findFile(targetName)
                                 if (target != null) {
