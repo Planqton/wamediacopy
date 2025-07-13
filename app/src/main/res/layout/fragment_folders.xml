@@ -8,6 +8,11 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Source Folders:" />
+
         <LinearLayout
             android:id="@+id/layout_sources"
             android:orientation="vertical"
@@ -21,9 +26,15 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
 
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Destination Folder:" />
+
         <LinearLayout
             android:orientation="horizontal"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="4dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
             <EditText
@@ -41,10 +52,16 @@
                 android:layout_height="wrap_content" />
         </LinearLayout>
 
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Skip if File is present here:" />
+
         <LinearLayout
             android:id="@+id/layout_exist"
             android:orientation="vertical"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="4dp"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 

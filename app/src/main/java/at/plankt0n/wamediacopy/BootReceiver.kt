@@ -19,7 +19,9 @@ class BootReceiver : BroadcastReceiver() {
             if (prefs.getBoolean(SettingsFragment.PREF_ENABLED, true)) {
                 val minutes = prefs.getInt(FileCopyWorker.PREF_INTERVAL_MINUTES, 720)
                 val period = minutes.coerceAtLeast(FileCopyWorker.MIN_INTERVAL_MINUTES).toLong()
-                val request = PeriodicWorkRequestBuilder<FileCopyWorker>(period, TimeUnit.MINUTES).build()
+                val request = PeriodicWorkRequestBuilder<FileCopyWorker>(period, TimeUnit.MINUTES)
+                    .addTag(FileCopyWorker.TAG)
+                    .build()
                 WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                     SettingsFragment.WORK_NAME,
                     ExistingPeriodicWorkPolicy.UPDATE,

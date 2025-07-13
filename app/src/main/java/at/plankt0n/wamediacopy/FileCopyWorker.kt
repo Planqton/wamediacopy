@@ -273,6 +273,7 @@ class FileCopyWorker(
                 .remove(PREF_COUNT_BLACKLISTED)
                 .putBoolean(PREF_STOP_REQUESTED, false)
                 .apply()
+            StatusNotifier.hideService(applicationContext)
         }
     }
 
