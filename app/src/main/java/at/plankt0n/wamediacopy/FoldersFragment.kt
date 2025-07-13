@@ -56,6 +56,8 @@ class FoldersFragment : Fragment(), SharedPreferences.OnSharedPreferenceChangeLi
         existing.addAll(prefs.getStringSet(FileCopyWorker.PREF_EXISTING_DIRS, emptySet()) ?: emptySet())
         refreshExisting(prefs)
         destEdit.setText(Uri.decode(prefs.getString(FileCopyWorker.PREF_DEST, "")))
+        destEdit.setSingleLine(true)
+        destEdit.setHorizontallyScrolling(true)
 
         addSource.setOnClickListener {
             Log.d(TAG, "add source pressed")
@@ -90,7 +92,10 @@ class FoldersFragment : Fragment(), SharedPreferences.OnSharedPreferenceChangeLi
             val row = LinearLayout(requireContext()).apply { orientation = LinearLayout.HORIZONTAL }
             val tv = TextView(requireContext()).apply {
                 text = Uri.decode(uri)
+            }
+            val scroll = android.widget.HorizontalScrollView(requireContext()).apply {
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                addView(tv)
             }
             val remove = Button(requireContext()).apply { text = "X" }
             remove.setOnClickListener {
@@ -101,7 +106,7 @@ class FoldersFragment : Fragment(), SharedPreferences.OnSharedPreferenceChangeLi
                 refreshSources(prefs)
                 AppLog.add(requireContext(), "Removed source $decoded")
             }
-            row.addView(tv)
+            row.addView(scroll)
             row.addView(remove)
             sourcesLayout.addView(row)
         }
@@ -112,9 +117,10 @@ class FoldersFragment : Fragment(), SharedPreferences.OnSharedPreferenceChangeLi
         existLayout.removeAllViews()
         for (uri in existing) {
             val row = LinearLayout(requireContext()).apply { orientation = LinearLayout.HORIZONTAL }
-            val tv = TextView(requireContext()).apply {
-                text = Uri.decode(uri)
+            val tv = TextView(requireContext()).apply { text = Uri.decode(uri) }
+            val scroll = android.widget.HorizontalScrollView(requireContext()).apply {
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                addView(tv)
             }
             val remove = Button(requireContext()).apply { text = "X" }
             remove.setOnClickListener {
@@ -125,7 +131,7 @@ class FoldersFragment : Fragment(), SharedPreferences.OnSharedPreferenceChangeLi
                 refreshExisting(prefs)
                 AppLog.add(requireContext(), "Removed existing $decoded")
             }
-            row.addView(tv)
+            row.addView(scroll)
             row.addView(remove)
             existLayout.addView(row)
         }
